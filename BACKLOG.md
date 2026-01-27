@@ -23,7 +23,7 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 
 | Fase | Estado | Progreso | Fecha Inicio | Fecha Fin |
 |------|--------|----------|--------------|-----------|
-| Fase 1: Core + Memory Bank | 🟡 En progreso | 35% | 2025-01-27 | - |
+| Fase 1: Core + Memory Bank | 🟡 En progreso | 50% | 2025-01-27 | - |
 | Fase 2: Java/Spring | ⚪ Pendiente | 0% | - | - |
 | Fase 3: .NET | ⚪ Pendiente | 0% | - | - |
 | Fase 4: Team Workflows + MCP | ⚪ Pendiente | 0% | - | - |
@@ -58,22 +58,22 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
 | 1.2.1 | project-context.schema.json | 🟢 Completado | Alta | Contexto general del proyecto |
-| 1.2.2 | team-context.schema.json | ⚪ Pendiente | Alta | Estructura del equipo |
+| 1.2.2 | team-context.schema.json | 🟢 Completado | Alta | Estructura del equipo |
 | 1.2.3 | module-context.schema.json | 🟢 Completado | Alta | Contexto por módulo/bounded context |
 | 1.2.4 | decision-record.schema.json | 🟢 Completado | Alta | ADRs |
-| 1.2.5 | knowledge-entry.schema.json | 🟡 Parcial | Alta | Entradas de conocimiento (incompleto) |
-| 1.2.6 | session-context.schema.json | ⚪ Pendiente | Media | Contexto de sesión individual |
+| 1.2.5 | knowledge-entry.schema.json | 🟢 Completado | Alta | Entradas de conocimiento |
+| 1.2.6 | session-context.schema.json | 🟢 Completado | Media | Contexto de sesión individual |
 
 ### 1.3 Memory Bank - Templates
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
 | 1.3.1 | project-context.template.md | 🟢 Completado | Alta | Template inicial proyecto |
-| 1.3.2 | team-context.template.md | ⚪ Pendiente | Alta | Template equipo |
+| 1.3.2 | team-context.template.md | 🟢 Completado | Alta | Template equipo |
 | 1.3.3 | module-context.template.md | 🟢 Completado | Alta | Template por módulo |
 | 1.3.4 | adr.template.md | 🟢 Completado | Alta | Architecture Decision Record |
-| 1.3.5 | knowledge-entry.template.md | ⚪ Pendiente | Alta | Entrada de conocimiento |
-| 1.3.6 | troubleshooting.template.md | ⚪ Pendiente | Media | Solución de problemas |
+| 1.3.5 | knowledge-entry.template.md | 🟢 Completado | Alta | Entrada de conocimiento |
+| 1.3.6 | troubleshooting.template.md | 🟢 Completado | Media | Solución de problemas |
 
 ### 1.4 Agentes Core
 
@@ -512,6 +512,7 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 | Fecha | Cambio | Autor |
 |-------|--------|-------|
 | 2025-01-27 | Creación inicial del backlog | Claude + Mike |
+| 2025-01-27 | Completados todos los schemas (1.2) y templates (1.3) del Memory Bank | Claude |
 
 ---
 

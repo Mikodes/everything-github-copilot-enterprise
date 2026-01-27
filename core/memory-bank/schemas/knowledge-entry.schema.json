@@ -1,0 +1,406 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/knowledge-entry.schema.json",
+  "title": "Knowledge Entry",
+  "description": "Schema for knowledge entries in the Memory Bank - captures team learnings, best practices, troubleshooting guides, and reusable snippets",
+  "type": "object",
+  "required": ["id", "title", "type", "content", "createdAt", "author"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^KB-\\d{4}$",
+      "description": "Unique identifier (e.g., KB-0001)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Descriptive title for the knowledge entry",
+      "minLength": 5,
+      "maxLength": 150
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "best-practice",
+        "troubleshooting",
+        "how-to",
+        "pattern",
+        "anti-pattern",
+        "snippet",
+        "lesson-learned",
+        "gotcha",
+        "tip",
+        "reference"
+      ],
+      "description": "Type of knowledge entry"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "deprecated", "needs-review"],
+      "default": "draft",
+      "description": "Publication status"
+    },
+    "content": {
+      "type": "string",
+      "description": "Main content of the knowledge entry (Markdown supported)",
+      "minLength": 20
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary (1-2 sentences)",
+      "maxLength": 300
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date",
+      "description": "Creation date"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "githubUsername": {
+          "type": "string"
+        }
+      },
+      "required": ["name"]
+    },
+    "contributors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "githubUsername": {
+            "type": "string"
+          },
+          "contribution": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Context in which this knowledge applies",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["java", "spring", "dotnet", "csharp", "typescript", "general"]
+          },
+          "description": "Technology stack this applies to"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific modules this relates to"
+        },
+        "versions": {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "runtime": {
+              "type": "string"
+            }
+          },
+          "description": "Version constraints"
+        },
+        "environment": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["development", "staging", "production", "ci", "all"]
+          }
+        }
+      }
+    },
+    "problem": {
+      "type": "object",
+      "description": "For troubleshooting entries - the problem being solved",
+      "properties": {
+        "symptoms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Observable symptoms"
+        },
+        "errorMessages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Error messages that indicate this problem"
+        },
+        "rootCause": {
+          "type": "string",
+          "description": "Root cause of the problem"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["rare", "occasional", "frequent", "common"],
+          "description": "How often this problem occurs"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Impact severity"
+        }
+      }
+    },
+    "solution": {
+      "type": "object",
+      "description": "The solution or recommendation",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "order": {
+                "type": "integer"
+              },
+              "description": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Step-by-step solution"
+        },
+        "quickFix": {
+          "type": "string",
+          "description": "Quick one-liner fix if applicable"
+        },
+        "timeToResolve": {
+          "type": "string",
+          "description": "Typical time to resolve"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Has this solution been verified?"
+        },
+        "verifiedDate": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "codeExamples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "doThis": {
+            "type": "boolean",
+            "description": "Is this a recommended example (true) or anti-pattern (false)?"
+          }
+        }
+      },
+      "description": "Code examples demonstrating the concept"
+    },
+    "relatedIssues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["github-issue", "jira", "azure-devops", "other"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Related issues or tickets"
+    },
+    "relatedPRs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related pull requests"
+    },
+    "relatedDecisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related ADR IDs"
+    },
+    "relatedKnowledge": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related knowledge entry IDs"
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["documentation", "article", "stackoverflow", "github", "book", "video", "internal"]
+          }
+        }
+      },
+      "description": "External references"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization and search"
+    },
+    "searchKeywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional keywords to improve searchability"
+    },
+    "applicability": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "When to apply this knowledge"
+        },
+        "whenNot": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "When NOT to apply this knowledge"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Prerequisites for applying this knowledge"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "views": {
+          "type": "integer",
+          "default": 0
+        },
+        "helpfulVotes": {
+          "type": "integer",
+          "default": 0
+        },
+        "usedCount": {
+          "type": "integer",
+          "default": 0,
+          "description": "Number of times this knowledge was applied"
+        },
+        "lastUsed": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "description": "Usage metrics"
+    },
+    "reviewSchedule": {
+      "type": "object",
+      "properties": {
+        "frequency": {
+          "type": "string",
+          "enum": ["monthly", "quarterly", "semi-annually", "annually", "as-needed"]
+        },
+        "nextReview": {
+          "type": "string",
+          "format": "date"
+        },
+        "reviewer": {
+          "type": "string"
+        }
+      }
+    },
+    "changelog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "author": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  }
+}
