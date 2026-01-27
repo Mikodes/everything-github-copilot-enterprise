@@ -1,0 +1,392 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/project-context.schema.json",
+  "title": "Project Context",
+  "description": "Schema for project-level context in the Memory Bank",
+  "type": "object",
+  "required": ["name", "description", "version", "lastUpdated"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the project's purpose"
+    },
+    "version": {
+      "type": "string",
+      "description": "Current project version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9]+)?$"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["development", "staging", "production", "maintenance", "deprecated"],
+      "description": "Current project status"
+    },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "defaultBranch": {
+          "type": "string",
+          "default": "main"
+        },
+        "branchingStrategy": {
+          "type": "string",
+          "enum": ["gitflow", "github-flow", "trunk-based", "custom"]
+        }
+      }
+    },
+    "businessDomain": {
+      "type": "object",
+      "description": "Business context",
+      "properties": {
+        "industry": {
+          "type": "string"
+        },
+        "primaryFunction": {
+          "type": "string",
+          "description": "Main purpose of the application"
+        },
+        "targetUsers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "criticalFeatures": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Features that are critical to business"
+        }
+      }
+    },
+    "technicalStack": {
+      "type": "object",
+      "properties": {
+        "primaryLanguage": {
+          "type": "string",
+          "enum": ["java", "csharp", "typescript", "python", "go", "other"]
+        },
+        "framework": {
+          "type": "string"
+        },
+        "frameworkVersion": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          }
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["postgresql", "mysql", "sqlserver", "mongodb", "redis", "other"]
+            },
+            "version": {
+              "type": "string"
+            },
+            "orm": {
+              "type": "string"
+            }
+          }
+        },
+        "messagingQueue": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["rabbitmq", "kafka", "sqs", "servicebus", "other", "none"]
+            },
+            "version": {
+              "type": "string"
+            }
+          }
+        },
+        "caching": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["redis", "memcached", "hazelcast", "other", "none"]
+            }
+          }
+        },
+        "containerization": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "platform": {
+              "type": "string",
+              "enum": ["docker", "podman", "other"]
+            },
+            "orchestration": {
+              "type": "string",
+              "enum": ["kubernetes", "docker-compose", "ecs", "other", "none"]
+            }
+          }
+        }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["monolith", "modular-monolith", "microservices", "serverless", "hybrid"]
+        },
+        "pattern": {
+          "type": "string",
+          "enum": ["layered", "hexagonal", "clean", "cqrs", "event-sourcing", "custom"]
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "responsibility": {
+                "type": "string"
+              },
+              "contextPath": {
+                "type": "string",
+                "description": "Path to module context in memory-bank"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "environments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cicd": {
+          "type": "object",
+          "properties": {
+            "platform": {
+              "type": "string",
+              "enum": ["github-actions", "azure-devops", "jenkins", "gitlab-ci", "other"]
+            },
+            "pipelinePath": {
+              "type": "string"
+            }
+          }
+        },
+        "cloud": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["aws", "azure", "gcp", "on-premise", "hybrid"]
+            },
+            "services": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "qualityGates": {
+      "type": "object",
+      "properties": {
+        "testCoverage": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "target": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "sonarQube": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "projectKey": {
+              "type": "string"
+            },
+            "qualityGate": {
+              "type": "string"
+            }
+          }
+        },
+        "securityScanning": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "properties": {
+        "projectManagement": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": ["jira", "azure-devops", "github-issues", "linear", "other"]
+            },
+            "projectKey": {
+              "type": "string"
+            }
+          }
+        },
+        "documentation": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": ["confluence", "notion", "github-wiki", "other"]
+            },
+            "spaceKey": {
+              "type": "string"
+            }
+          }
+        },
+        "communication": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": ["slack", "teams", "discord", "other"]
+            },
+            "channels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "conventions": {
+      "type": "object",
+      "properties": {
+        "commitFormat": {
+          "type": "string",
+          "enum": ["conventional", "angular", "custom"],
+          "default": "conventional"
+        },
+        "prTemplate": {
+          "type": "string",
+          "description": "Path to PR template"
+        },
+        "codeStyle": {
+          "type": "string",
+          "description": "Reference to code style guide"
+        }
+      }
+    },
+    "contacts": {
+      "type": "object",
+      "properties": {
+        "techLead": {
+          "$ref": "#/$defs/contact"
+        },
+        "productOwner": {
+          "$ref": "#/$defs/contact"
+        },
+        "architects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contact"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the project"
+    }
+  },
+  "$defs": {
+    "contact": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

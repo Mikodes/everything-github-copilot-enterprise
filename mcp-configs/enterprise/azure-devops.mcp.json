@@ -1,0 +1,254 @@
+{
+  "$schema": "https://egce.dev/schemas/mcp-config.schema.json",
+  "name": "Azure DevOps MCP Server",
+  "description": "Official Microsoft MCP Server for Azure DevOps integration",
+  "version": "1.0.0",
+  "documentation": "https://github.com/microsoft/azure-devops-mcp",
+  "repository": "https://github.com/microsoft/azure-devops-mcp",
+  
+  "requirements": {
+    "azureDevOps": true,
+    "azureCLI": true,
+    "nodeJS": ">=20.0.0"
+  },
+
+  "configuration": {
+    "vscode": {
+      "mcp.json": {
+        "inputs": [
+          {
+            "id": "ado_org",
+            "type": "promptString",
+            "description": "Azure DevOps organization name (e.g. 'contoso')"
+          }
+        ],
+        "servers": {
+          "ado": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@azure-devops/mcp", "${input:ado_org}"]
+          }
+        }
+      }
+    },
+
+    "withDomains": {
+      "comment": "Use domains to limit loaded tools and conserve context window",
+      "mcp.json": {
+        "inputs": [
+          {
+            "id": "ado_org",
+            "type": "promptString",
+            "description": "Azure DevOps organization name"
+          }
+        ],
+        "servers": {
+          "ado": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+              "-y", 
+              "@azure-devops/mcp", 
+              "${input:ado_org}",
+              "-d", "core", "work", "work-items", "repositories"
+            ]
+          }
+        }
+      }
+    },
+
+    "codingAgent": {
+      "comment": "Configuration for GitHub Copilot Coding Agent",
+      "workflowStep": {
+        "name": "Azure Login",
+        "uses": "azure/login@v2",
+        "with": {
+          "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+          "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+          "allow-no-subscriptions": true
+        }
+      },
+      "mcpConfig": {
+        "mcpServers": {
+          "ado": {
+            "command": "npx",
+            "args": ["-y", "@azure-devops/mcp@next", "your-organization"],
+            "tools": [
+              "ado_get_work_item",
+              "ado_search_work_items",
+              "ado_get_pull_request"
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "domains": {
+    "available": [
+      {
+        "name": "core",
+        "description": "Core project information",
+        "tools": ["ado_list_projects", "ado_get_project"],
+        "recommended": true
+      },
+      {
+        "name": "work",
+        "description": "Work management (iterations, boards)",
+        "tools": ["ado_list_iterations", "ado_get_board"]
+      },
+      {
+        "name": "work-items",
+        "description": "Work item management",
+        "tools": ["ado_get_work_item", "ado_search_work_items", "ado_create_work_item", "ado_update_work_item"]
+      },
+      {
+        "name": "repositories",
+        "description": "Repository management",
+        "tools": ["ado_list_repositories", "ado_get_pull_request", "ado_list_pull_requests"]
+      },
+      {
+        "name": "pipelines",
+        "description": "Pipeline management",
+        "tools": ["ado_list_pipelines", "ado_get_pipeline", "ado_run_pipeline"]
+      },
+      {
+        "name": "wiki",
+        "description": "Wiki management",
+        "tools": ["ado_search_wiki", "ado_get_wiki_page"]
+      },
+      {
+        "name": "test-plans",
+        "description": "Test plan management",
+        "tools": ["ado_list_test_plans", "ado_get_test_results"]
+      },
+      {
+        "name": "search",
+        "description": "Global search",
+        "tools": ["ado_search_code", "ado_search_wiki"]
+      },
+      {
+        "name": "advanced-security",
+        "description": "GitHub Advanced Security for Azure DevOps",
+        "tools": ["ado_get_security_alerts"]
+      }
+    ],
+    "recommendation": "Enable 'core' plus domains relevant to your workflow. Avoid enabling all domains to conserve context window."
+  },
+
+  "tools": {
+    "workItems": [
+      {
+        "name": "ado_get_work_item",
+        "description": "Get details of a specific work item",
+        "example": "Get work item 12345"
+      },
+      {
+        "name": "ado_search_work_items",
+        "description": "Search work items using WIQL",
+        "example": "Find all bugs assigned to me"
+      },
+      {
+        "name": "ado_create_work_item",
+        "description": "Create a new work item",
+        "example": "Create a user story for implementing user authentication"
+      },
+      {
+        "name": "ado_update_work_item",
+        "description": "Update an existing work item",
+        "example": "Move work item 12345 to In Progress"
+      }
+    ],
+    "repositories": [
+      {
+        "name": "ado_list_repositories",
+        "description": "List repositories in a project",
+        "example": "List all repositories in MyProject"
+      },
+      {
+        "name": "ado_get_pull_request",
+        "description": "Get details of a pull request",
+        "example": "Get pull request 456"
+      },
+      {
+        "name": "ado_list_pull_requests",
+        "description": "List pull requests",
+        "example": "Show my open pull requests"
+      }
+    ],
+    "pipelines": [
+      {
+        "name": "ado_list_pipelines",
+        "description": "List pipelines in a project",
+        "example": "List all pipelines in MyProject"
+      },
+      {
+        "name": "ado_get_pipeline",
+        "description": "Get pipeline details",
+        "example": "Get the status of the main CI pipeline"
+      },
+      {
+        "name": "ado_run_pipeline",
+        "description": "Trigger a pipeline run",
+        "example": "Run the deployment pipeline"
+      }
+    ]
+  },
+
+  "useCases": [
+    {
+      "name": "Daily Standup",
+      "description": "Get summary of your work items",
+      "example": "What work items am I assigned to in the current sprint?"
+    },
+    {
+      "name": "PR Context",
+      "description": "Link work items to pull requests",
+      "example": "Create a PR description based on work item 12345"
+    },
+    {
+      "name": "Sprint Planning",
+      "description": "Review and plan sprint work",
+      "example": "Show me the backlog items for next sprint"
+    },
+    {
+      "name": "Pipeline Monitoring",
+      "description": "Check build and deployment status",
+      "example": "What's the status of the latest deployment?"
+    }
+  ],
+
+  "copilotInstructions": {
+    "recommendation": "Add to .github/copilot-instructions.md",
+    "content": "## Azure DevOps Integration\n\nThis project uses Azure DevOps for work tracking and CI/CD.\n\n- **Organization**: {{ADO_ORG}}\n- **Project**: {{ADO_PROJECT}}\n\nWhen working on features:\n1. Reference work item IDs in commits using AB#12345 format\n2. Link PRs to work items\n3. Check pipeline status before merging\n\nThe Azure DevOps MCP server is available. Always check if there's a relevant tool before searching the web."
+  },
+
+  "authentication": {
+    "methods": [
+      {
+        "name": "Azure CLI",
+        "description": "Recommended for local development",
+        "steps": [
+          "Install Azure CLI",
+          "Run: az login",
+          "Authenticate with your Microsoft account"
+        ]
+      },
+      {
+        "name": "Personal Access Token",
+        "description": "Alternative for environments without Azure CLI",
+        "steps": [
+          "Generate PAT in Azure DevOps",
+          "Set environment variable: AZURE_DEVOPS_PAT"
+        ]
+      }
+    ]
+  },
+
+  "securityNotes": [
+    "Personal Access Tokens should have minimum required scopes",
+    "Use Azure CLI authentication when possible",
+    "For Coding Agent, use OIDC with managed identity",
+    "Review Azure DevOps permission model for your organization"
+  ]
+}

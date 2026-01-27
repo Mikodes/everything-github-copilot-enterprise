@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/decision-record.schema.json",
+  "title": "Architecture Decision Record",
+  "description": "Schema for Architecture Decision Records (ADRs) in the Memory Bank",
+  "type": "object",
+  "required": ["id", "title", "status", "date", "context", "decision"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ADR-\\d{4}$",
+      "description": "Unique identifier (e.g., ADR-0001)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short descriptive title",
+      "minLength": 10,
+      "maxLength": 100
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "accepted", "deprecated", "superseded"],
+      "description": "Current status of the decision"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the decision was made"
+    },
+    "deciders": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "People who made this decision"
+    },
+    "consulted": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "People consulted before the decision"
+    },
+    "informed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "People informed about the decision"
+    },
+    "context": {
+      "type": "string",
+      "description": "The issue motivating this decision, and any context that influences or constrains the decision",
+      "minLength": 50
+    },
+    "decision": {
+      "type": "string",
+      "description": "The change that we're proposing or have agreed to implement",
+      "minLength": 20
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Why this decision was made (the 'why' behind the decision)"
+    },
+    "consequences": {
+      "type": "object",
+      "properties": {
+        "positive": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Positive outcomes of this decision"
+        },
+        "negative": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Negative outcomes or trade-offs"
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "risk": {
+                "type": "string"
+              },
+              "likelihood": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "description": "Alternative option considered"
+          },
+          "pros": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "whyRejected": {
+            "type": "string",
+            "description": "Why this alternative was not chosen"
+          }
+        }
+      },
+      "description": "Other options considered"
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Modules affected by this decision"
+        },
+        "teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Teams affected by this decision"
+        },
+        "systems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "External systems affected"
+        }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "properties": {
+        "effort": {
+          "type": "string",
+          "enum": ["trivial", "small", "medium", "large", "epic"],
+          "description": "Estimated implementation effort"
+        },
+        "timeline": {
+          "type": "string",
+          "description": "Expected implementation timeline"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "in-progress", "completed"]
+              },
+              "assignee": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Implementation tasks"
+        },
+        "relatedPRs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Related pull requests"
+        },
+        "relatedIssues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Related issues/tickets"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Success criteria for this decision"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "current": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Metrics to validate the decision"
+        },
+        "reviewDate": {
+          "type": "string",
+          "format": "date",
+          "description": "When to review this decision"
+        }
+      }
+    },
+    "supersedes": {
+      "type": "string",
+      "description": "ADR ID that this decision supersedes"
+    },
+    "supersededBy": {
+      "type": "string",
+      "description": "ADR ID that supersedes this decision"
+    },
+    "relatedDecisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related ADR IDs"
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["documentation", "article", "book", "video", "internal"]
+          }
+        }
+      },
+      "description": "External references that support this decision"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "lastReviewed": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last review"
+    },
+    "reviewNotes": {
+      "type": "string",
+      "description": "Notes from last review"
+    }
+  }
+}

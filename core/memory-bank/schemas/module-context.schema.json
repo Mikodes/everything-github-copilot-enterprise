@@ -1,0 +1,476 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/module-context.schema.json",
+  "title": "Module Context",
+  "description": "Schema for module/bounded context in the Memory Bank",
+  "type": "object",
+  "required": ["name", "description", "lastUpdated"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Module name",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "What this module does and why it exists"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "deprecated", "planned", "refactoring"],
+      "default": "active"
+    },
+    "ownership": {
+      "type": "object",
+      "properties": {
+        "team": {
+          "type": "string",
+          "description": "Team responsible for this module"
+        },
+        "maintainers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "GitHub usernames of maintainers"
+        },
+        "codeOwners": {
+          "type": "string",
+          "description": "Path pattern for CODEOWNERS"
+        }
+      }
+    },
+    "boundedContext": {
+      "type": "object",
+      "description": "Domain-Driven Design bounded context",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Business domain this module belongs to"
+        },
+        "ubiquitousLanguage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "definition": {
+                "type": "string"
+              },
+              "examples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["term", "definition"]
+          },
+          "description": "Domain-specific terminology"
+        },
+        "aggregates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "root": {
+                "type": "string",
+                "description": "Aggregate root entity"
+              },
+              "entities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "valueObjects": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responsibilities": {
+      "type": "object",
+      "properties": {
+        "does": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What this module IS responsible for"
+        },
+        "doesNot": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What this module is NOT responsible for"
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "properties": {
+        "sourcePath": {
+          "type": "string",
+          "description": "Path to module source code"
+        },
+        "testPath": {
+          "type": "string",
+          "description": "Path to module tests"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "responsibility": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Architectural layers within the module"
+        },
+        "keyFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "importance": {
+                "type": "string",
+                "enum": ["critical", "important", "normal"]
+              }
+            }
+          },
+          "description": "Important files to understand the module"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "internal": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "module": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["sync", "async", "event"]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Dependencies on other internal modules"
+        },
+        "external": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "service": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["rest", "grpc", "graphql", "database", "queue", "other"]
+              },
+              "description": {
+                "type": "string"
+              },
+              "critical": {
+                "type": "boolean",
+                "description": "Is this dependency critical for module operation?"
+              }
+            }
+          },
+          "description": "Dependencies on external services"
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "description": "API contracts this module exposes or consumes",
+      "properties": {
+        "exposes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["rest", "grpc", "graphql", "event", "internal"]
+              },
+              "path": {
+                "type": "string",
+                "description": "API path or event name"
+              },
+              "description": {
+                "type": "string"
+              },
+              "schemaPath": {
+                "type": "string",
+                "description": "Path to OpenAPI/schema file"
+              },
+              "consumers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Known consumers of this contract"
+              }
+            }
+          }
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["rest", "grpc", "graphql", "event", "internal"]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "object",
+      "description": "Domain events",
+      "properties": {
+        "publishes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "payload": {
+                "type": "string",
+                "description": "Description of event payload"
+              },
+              "trigger": {
+                "type": "string",
+                "description": "What triggers this event"
+              }
+            }
+          }
+        },
+        "subscribes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "handler": {
+                "type": "string",
+                "description": "Handler class/function"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "testing": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Testing strategy for this module"
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "current": {
+              "type": "number"
+            },
+            "target": {
+              "type": "number"
+            }
+          }
+        },
+        "criticalPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Critical paths that must always be tested"
+        },
+        "testData": {
+          "type": "string",
+          "description": "How to set up test data"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "dataClassification": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"],
+          "description": "Data sensitivity level"
+        },
+        "authRequired": {
+          "type": "boolean"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required permissions to access this module"
+        },
+        "sensitiveOperations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "type": "string"
+              },
+              "risk": {
+                "type": "string"
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "performance": {
+      "type": "object",
+      "properties": {
+        "sla": {
+          "type": "object",
+          "properties": {
+            "responseTime": {
+              "type": "string",
+              "description": "Expected response time (e.g., 'p99 < 200ms')"
+            },
+            "throughput": {
+              "type": "string",
+              "description": "Expected throughput"
+            },
+            "availability": {
+              "type": "string",
+              "description": "Expected availability (e.g., '99.9%')"
+            }
+          }
+        },
+        "knownBottlenecks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "mitigation": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "scalingStrategy": {
+          "type": "string"
+        }
+      }
+    },
+    "changelog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "breaking": {
+            "type": "boolean"
+          },
+          "author": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Significant changes to this module"
+    },
+    "relatedDecisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related ADR file names"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about this module"
+    }
+  }
+}

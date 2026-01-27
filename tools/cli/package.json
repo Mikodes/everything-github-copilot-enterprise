@@ -1,0 +1,51 @@
+{
+  "name": "egce",
+  "version": "0.1.0",
+  "description": "Everything GitHub Copilot Enterprise - CLI tool for managing Memory Bank and Copilot configurations",
+  "main": "lib/index.js",
+  "bin": {
+    "egce": "./bin/egce.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node bin/egce.ts",
+    "test": "vitest",
+    "lint": "eslint src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "github-copilot",
+    "enterprise",
+    "memory-bank",
+    "cli",
+    "ai"
+  ],
+  "author": "Mike <mike@exceptia.com>",
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.0",
+    "inquirer": "^9.2.0",
+    "js-yaml": "^4.1.0",
+    "ora": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "templates"
+  ]
+}

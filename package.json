@@ -1,0 +1,55 @@
+{
+  "name": "everything-github-copilot-enterprise",
+  "version": "0.1.0",
+  "description": "Enterprise-grade GitHub Copilot configuration framework with Memory Bank for teams",
+  "keywords": [
+    "github-copilot",
+    "ai",
+    "enterprise",
+    "memory-bank",
+    "java",
+    "spring",
+    "dotnet",
+    "team-collaboration"
+  ],
+  "author": "Mike <mike@exceptia.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/exceptia/everything-github-copilot-enterprise.git"
+  },
+  "homepage": "https://github.com/exceptia/everything-github-copilot-enterprise#readme",
+  "bugs": {
+    "url": "https://github.com/exceptia/everything-github-copilot-enterprise/issues"
+  },
+  "workspaces": [
+    "tools/cli",
+    "tools/vscode-extension",
+    "tools/web-dashboard"
+  ],
+  "scripts": {
+    "cli": "npm run --workspace=tools/cli",
+    "extension": "npm run --workspace=tools/vscode-extension",
+    "dashboard": "npm run --workspace=tools/web-dashboard",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

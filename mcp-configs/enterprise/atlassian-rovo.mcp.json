@@ -1,0 +1,149 @@
+{
+  "$schema": "https://egce.dev/schemas/mcp-config.schema.json",
+  "name": "Atlassian Rovo MCP Server",
+  "description": "Official Atlassian MCP Server for Jira, Confluence, and Compass integration",
+  "version": "1.0.0",
+  "documentation": "https://support.atlassian.com/atlassian-rovo-mcp-server/",
+  "repository": "https://github.com/atlassian/atlassian-mcp-server",
+  
+  "requirements": {
+    "atlassianCloud": true,
+    "products": ["jira", "confluence"],
+    "authentication": "oauth2.1"
+  },
+
+  "configuration": {
+    "vscode": {
+      "mcp.json": {
+        "servers": {
+          "atlassian": {
+            "type": "sse",
+            "url": "https://mcp.atlassian.com/v1/mcp",
+            "note": "Remote MCP server - authentication via browser OAuth"
+          }
+        }
+      }
+    },
+    
+    "local": {
+      "comment": "For local development with community server",
+      "mcp.json": {
+        "servers": {
+          "mcp-atlassian": {
+            "type": "stdio",
+            "command": "uvx",
+            "args": ["mcp-atlassian"],
+            "env": {
+              "JIRA_URL": "${JIRA_URL}",
+              "JIRA_USERNAME": "${JIRA_USERNAME}",
+              "JIRA_API_TOKEN": "${JIRA_API_TOKEN}",
+              "CONFLUENCE_URL": "${CONFLUENCE_URL}",
+              "CONFLUENCE_USERNAME": "${CONFLUENCE_USERNAME}",
+              "CONFLUENCE_API_TOKEN": "${CONFLUENCE_API_TOKEN}"
+            }
+          }
+        }
+      },
+      "envExample": {
+        "JIRA_URL": "https://your-company.atlassian.net",
+        "JIRA_USERNAME": "your.email@company.com",
+        "JIRA_API_TOKEN": "your_api_token_from_atlassian",
+        "CONFLUENCE_URL": "https://your-company.atlassian.net/wiki",
+        "CONFLUENCE_USERNAME": "your.email@company.com",
+        "CONFLUENCE_API_TOKEN": "your_api_token_from_atlassian"
+      }
+    }
+  },
+
+  "tools": {
+    "jira": [
+      {
+        "name": "jira_search",
+        "description": "Search Jira issues using JQL",
+        "example": "Search for open bugs in project MYPROJ"
+      },
+      {
+        "name": "jira_get_issue",
+        "description": "Get details of a specific Jira issue",
+        "example": "Get details of MYPROJ-123"
+      },
+      {
+        "name": "jira_create_issue",
+        "description": "Create a new Jira issue",
+        "example": "Create a bug report for the login page"
+      },
+      {
+        "name": "jira_update_issue",
+        "description": "Update an existing Jira issue",
+        "example": "Update status of MYPROJ-123 to In Progress"
+      },
+      {
+        "name": "jira_add_comment",
+        "description": "Add a comment to a Jira issue",
+        "example": "Add a comment to MYPROJ-123"
+      },
+      {
+        "name": "jira_get_transitions",
+        "description": "Get available status transitions for an issue",
+        "example": "What transitions are available for MYPROJ-123?"
+      }
+    ],
+    "confluence": [
+      {
+        "name": "confluence_search",
+        "description": "Search Confluence content",
+        "example": "Find documentation about API authentication"
+      },
+      {
+        "name": "confluence_get_page",
+        "description": "Get content of a Confluence page",
+        "example": "Get the Architecture Overview page"
+      },
+      {
+        "name": "confluence_create_page",
+        "description": "Create a new Confluence page",
+        "example": "Create a new page for sprint retrospective"
+      },
+      {
+        "name": "confluence_update_page",
+        "description": "Update an existing Confluence page",
+        "example": "Update the deployment runbook"
+      }
+    ]
+  },
+
+  "useCases": [
+    {
+      "name": "Sync PR with Jira",
+      "description": "When creating a PR, automatically fetch related Jira issue details",
+      "example": "Get context from MYPROJ-123 to help me write a PR description"
+    },
+    {
+      "name": "Update Documentation",
+      "description": "Update Confluence documentation based on code changes",
+      "example": "Update the API documentation page with the new endpoints I just added"
+    },
+    {
+      "name": "Sprint Planning",
+      "description": "Help with sprint planning by analyzing Jira backlog",
+      "example": "Show me the highest priority bugs that haven't been assigned"
+    },
+    {
+      "name": "Standup Prep",
+      "description": "Prepare for standup by summarizing yesterday's work",
+      "example": "What issues did I work on yesterday?"
+    }
+  ],
+
+  "copilotInstructions": {
+    "recommendation": "Add to .github/copilot-instructions.md",
+    "content": "## Atlassian Integration\n\nThis project uses Jira for issue tracking and Confluence for documentation.\n\n- **Jira Project**: {{JIRA_PROJECT_KEY}}\n- **Confluence Space**: {{CONFLUENCE_SPACE_KEY}}\n\nWhen working on features:\n1. Always reference the Jira issue number in commits\n2. Update related Confluence documentation when making significant changes\n3. Use Jira transitions to update issue status\n\nThe Atlassian MCP server is available for querying issues and documentation."
+  },
+
+  "securityNotes": [
+    "API tokens should be stored in environment variables, never in code",
+    "Use the minimum required scopes for API tokens",
+    "OAuth 2.1 is recommended for production use",
+    "Review Atlassian's security documentation for enterprise deployments"
+  ]
+}
