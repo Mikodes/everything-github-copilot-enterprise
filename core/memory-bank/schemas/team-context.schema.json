@@ -1,0 +1,612 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/team-context.schema.json",
+  "title": "Team Context",
+  "description": "Schema for team-level context in the Memory Bank - captures team structure, capabilities, conventions, and working agreements",
+  "type": "object",
+  "required": ["name", "description", "lastUpdated"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Team name",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "description": "Team's mission and purpose"
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["feature", "platform", "enablement", "stream-aligned", "complicated-subsystem"],
+      "description": "Team topology type"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "forming", "reorganizing", "disbanded"],
+      "default": "active"
+    },
+    "organization": {
+      "type": "object",
+      "properties": {
+        "department": {
+          "type": "string"
+        },
+        "division": {
+          "type": "string"
+        },
+        "costCenter": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "description": "Primary location or 'distributed'"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Primary timezone (e.g., 'UTC-5', 'Europe/Madrid')"
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/teamMember"
+      },
+      "description": "Current team members"
+    },
+    "roles": {
+      "type": "object",
+      "properties": {
+        "techLead": {
+          "$ref": "#/$defs/roleAssignment"
+        },
+        "productOwner": {
+          "$ref": "#/$defs/roleAssignment"
+        },
+        "scrumMaster": {
+          "$ref": "#/$defs/roleAssignment"
+        },
+        "architect": {
+          "$ref": "#/$defs/roleAssignment"
+        },
+        "qaLead": {
+          "$ref": "#/$defs/roleAssignment"
+        }
+      }
+    },
+    "responsibilities": {
+      "type": "object",
+      "properties": {
+        "owns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Modules/services this team owns"
+        },
+        "maintains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Modules/services this team maintains but doesn't own"
+        },
+        "contributes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Modules/services this team contributes to"
+        }
+      }
+    },
+    "expertise": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Primary areas of expertise"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Secondary areas of expertise"
+        },
+        "learning": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Areas currently being learned/developed"
+        }
+      }
+    },
+    "techStack": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Primary technologies used"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Secondary/supporting technologies"
+        },
+        "deprecated": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Technologies being phased out"
+        }
+      }
+    },
+    "workingAgreements": {
+      "type": "object",
+      "properties": {
+        "coreHours": {
+          "type": "string",
+          "description": "Core collaboration hours (e.g., '10:00-16:00 CET')"
+        },
+        "meetings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "frequency": {
+                "type": "string"
+              },
+              "day": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string"
+              },
+              "duration": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responseTime": {
+          "type": "object",
+          "properties": {
+            "slack": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "codeReview": {
+              "type": "string"
+            }
+          }
+        },
+        "onCall": {
+          "type": "object",
+          "properties": {
+            "rotation": {
+              "type": "string",
+              "enum": ["weekly", "bi-weekly", "monthly"]
+            },
+            "schedule": {
+              "type": "string",
+              "description": "Link to on-call schedule"
+            },
+            "escalation": {
+              "type": "string",
+              "description": "Escalation procedure"
+            }
+          }
+        }
+      }
+    },
+    "developmentPractices": {
+      "type": "object",
+      "properties": {
+        "methodology": {
+          "type": "string",
+          "enum": ["scrum", "kanban", "scrumban", "xp", "custom"]
+        },
+        "sprintLength": {
+          "type": "integer",
+          "description": "Sprint length in days (if using sprints)"
+        },
+        "branchingStrategy": {
+          "type": "string",
+          "enum": ["gitflow", "github-flow", "trunk-based", "custom"]
+        },
+        "codeReview": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "minApprovals": {
+              "type": "integer"
+            },
+            "autoAssign": {
+              "type": "boolean"
+            },
+            "slaHours": {
+              "type": "integer",
+              "description": "Expected review turnaround in hours"
+            }
+          }
+        },
+        "pairProgramming": {
+          "type": "object",
+          "properties": {
+            "encouraged": {
+              "type": "boolean"
+            },
+            "frequency": {
+              "type": "string"
+            }
+          }
+        },
+        "tdd": {
+          "type": "boolean",
+          "description": "Does the team practice TDD?"
+        },
+        "cicd": {
+          "type": "object",
+          "properties": {
+            "deployFrequency": {
+              "type": "string",
+              "description": "How often the team deploys"
+            },
+            "featureFlags": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "qualityStandards": {
+      "type": "object",
+      "properties": {
+        "testCoverage": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "number"
+            },
+            "target": {
+              "type": "number"
+            }
+          }
+        },
+        "codeQuality": {
+          "type": "object",
+          "properties": {
+            "linting": {
+              "type": "boolean"
+            },
+            "staticAnalysis": {
+              "type": "boolean"
+            },
+            "sonarQubeGate": {
+              "type": "string"
+            }
+          }
+        },
+        "documentation": {
+          "type": "object",
+          "properties": {
+            "apiDocs": {
+              "type": "string",
+              "enum": ["required", "encouraged", "optional"]
+            },
+            "adr": {
+              "type": "string",
+              "enum": ["required", "encouraged", "optional"]
+            },
+            "readme": {
+              "type": "string",
+              "enum": ["required", "encouraged", "optional"]
+            }
+          }
+        }
+      }
+    },
+    "communication": {
+      "type": "object",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "enum": ["slack", "teams", "discord", "email", "other"]
+              },
+              "name": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "announcements": {
+          "type": "string",
+          "description": "Where team announcements are made"
+        },
+        "incidents": {
+          "type": "string",
+          "description": "Channel for incident communication"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "upstream": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["blocking", "collaborative", "x-as-a-service"]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Teams this team depends on"
+        },
+        "downstream": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "team": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["blocking", "collaborative", "x-as-a-service"]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Teams that depend on this team"
+        }
+      }
+    },
+    "onboarding": {
+      "type": "object",
+      "properties": {
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "duration": {
+                "type": "string"
+              },
+              "resources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "buddy": {
+          "type": "string",
+          "description": "Current onboarding buddy"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expectedRampUp": {
+          "type": "string",
+          "description": "Expected time to full productivity"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "velocity": {
+          "type": "object",
+          "properties": {
+            "average": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "enum": ["story-points", "tasks", "features"]
+            }
+          }
+        },
+        "leadTime": {
+          "type": "string",
+          "description": "Average lead time for changes"
+        },
+        "deploymentFrequency": {
+          "type": "string"
+        },
+        "mttr": {
+          "type": "string",
+          "description": "Mean time to recovery"
+        },
+        "changeFailureRate": {
+          "type": "string"
+        }
+      },
+      "description": "Team performance metrics (DORA metrics, etc.)"
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "projectManagement": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "codeRepository": {
+          "type": "string"
+        },
+        "cicd": {
+          "type": "string"
+        },
+        "monitoring": {
+          "type": "string"
+        },
+        "logging": {
+          "type": "string"
+        },
+        "apm": {
+          "type": "string"
+        }
+      }
+    },
+    "links": {
+      "type": "object",
+      "properties": {
+        "wiki": {
+          "type": "string",
+          "format": "uri"
+        },
+        "board": {
+          "type": "string",
+          "format": "uri"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "dashboard": {
+          "type": "string",
+          "format": "uri"
+        },
+        "runbook": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the team"
+    }
+  },
+  "$defs": {
+    "teamMember": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "githubUsername": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "seniority": {
+          "type": "string",
+          "enum": ["junior", "mid", "senior", "staff", "principal"]
+        },
+        "expertise": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "joinedTeam": {
+          "type": "string",
+          "format": "date"
+        },
+        "availability": {
+          "type": "string",
+          "enum": ["full-time", "part-time", "contractor"],
+          "default": "full-time"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "role"]
+    },
+    "roleAssignment": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "since": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  }
+}

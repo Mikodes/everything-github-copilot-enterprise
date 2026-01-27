@@ -1,0 +1,468 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://egce.dev/schemas/session-context.schema.json",
+  "title": "Session Context",
+  "description": "Schema for individual session context in the Memory Bank - captures current work focus, active tasks, and session-specific information for Copilot",
+  "type": "object",
+  "required": ["sessionId", "startedAt", "developer"],
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "description": "Unique session identifier",
+      "pattern": "^session-[a-z0-9]{8}$"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session start timestamp"
+    },
+    "lastActivity": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last activity timestamp"
+    },
+    "developer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "githubUsername": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "experienceLevel": {
+          "type": "string",
+          "enum": ["junior", "mid", "senior", "staff", "principal"],
+          "description": "Helps Copilot adjust explanation depth"
+        }
+      },
+      "required": ["name"]
+    },
+    "focus": {
+      "type": "object",
+      "description": "Current work focus",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "feature",
+            "bugfix",
+            "refactoring",
+            "testing",
+            "documentation",
+            "review",
+            "investigation",
+            "learning",
+            "maintenance",
+            "other"
+          ],
+          "description": "Type of work being done"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short description of current focus"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of what's being worked on"
+        },
+        "ticket": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "description": "Related ticket/issue"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Current git branch"
+        },
+        "pr": {
+          "type": "object",
+          "properties": {
+            "number": {
+              "type": "integer"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["draft", "open", "review", "approved", "merged"]
+            }
+          }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "description": "Scope of current work",
+      "properties": {
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Modules being worked on"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Key files in current scope"
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Packages/namespaces in scope"
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "in-progress", "completed", "blocked", "deferred"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["description", "status"]
+      },
+      "description": "Tasks for this session"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "Decisions made during this session"
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["technical", "dependency", "information", "access", "other"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "resolved", "escalated"]
+          },
+          "resolution": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Current blockers"
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context for Copilot",
+      "properties": {
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Working assumptions"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Constraints to consider"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Specific requirements"
+        },
+        "outOfScope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Things explicitly out of scope"
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Developer preferences for this session",
+      "properties": {
+        "codeStyle": {
+          "type": "object",
+          "properties": {
+            "verbosity": {
+              "type": "string",
+              "enum": ["concise", "balanced", "verbose"],
+              "description": "Preferred code verbosity"
+            },
+            "comments": {
+              "type": "string",
+              "enum": ["minimal", "moderate", "detailed"]
+            },
+            "language": {
+              "type": "string",
+              "description": "Preferred language for comments/docs"
+            }
+          }
+        },
+        "explanations": {
+          "type": "string",
+          "enum": ["brief", "moderate", "detailed"],
+          "description": "How detailed should explanations be"
+        },
+        "suggestions": {
+          "type": "object",
+          "properties": {
+            "refactoring": {
+              "type": "boolean",
+              "description": "Suggest refactoring opportunities"
+            },
+            "testing": {
+              "type": "boolean",
+              "description": "Suggest tests"
+            },
+            "performance": {
+              "type": "boolean",
+              "description": "Suggest performance improvements"
+            },
+            "security": {
+              "type": "boolean",
+              "description": "Highlight security considerations"
+            }
+          }
+        }
+      }
+    },
+    "references": {
+      "type": "object",
+      "description": "References used in this session",
+      "properties": {
+        "documentation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "codeExamples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Reference code in the codebase"
+        },
+        "relatedPRs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "knowledgeEntries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Related KB entry IDs"
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["note", "question", "todo", "idea", "concern"]
+          }
+        }
+      },
+      "description": "Session notes"
+    },
+    "learnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "shouldDocument": {
+            "type": "boolean",
+            "description": "Should this be added to knowledge base?"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Things learned during this session"
+    },
+    "handoff": {
+      "type": "object",
+      "description": "Information for session handoff or continuation",
+      "properties": {
+        "nextSteps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "openQuestions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Things to watch out for"
+        },
+        "continuationNotes": {
+          "type": "string",
+          "description": "Notes for continuing this work later"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "filesModified": {
+          "type": "integer"
+        },
+        "linesAdded": {
+          "type": "integer"
+        },
+        "linesRemoved": {
+          "type": "integer"
+        },
+        "testsAdded": {
+          "type": "integer"
+        },
+        "copilotSuggestions": {
+          "type": "object",
+          "properties": {
+            "accepted": {
+              "type": "integer"
+            },
+            "modified": {
+              "type": "integer"
+            },
+            "rejected": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "description": "Session productivity metrics"
+    },
+    "endedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Session end timestamp"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "paused", "completed", "abandoned"],
+      "default": "active"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Session summary (typically filled at end)"
+    }
+  }
+}
