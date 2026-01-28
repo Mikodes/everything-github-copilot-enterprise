@@ -1,0 +1,223 @@
+name: Sync Memory Bank
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'memory-bank/**'
+      - '.github/copilot-instructions.md'
+      - 'core/**/*.agent.md'
+      - 'core/**/*.instructions.md'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'memory-bank/**'
+  workflow_dispatch:
+    inputs:
+      sync_target:
+        description: 'Sync target (all, schemas, templates, contexts)'
+        required: false
+        default: 'all'
+      validate_only:
+        description: 'Only validate, do not sync'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  MEMORY_BANK_PATH: './memory-bank'
+
+jobs:
+  validate:
+    name: Validate Memory Bank Contents
+    runs-on: ubuntu-latest
+    outputs:
+      validation_passed: ${{ steps.validate.outputs.passed }}
+      validation_report: ${{ steps.validate.outputs.report }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: tools/cli/package-lock.json
+
+      - name: Install CLI dependencies
+        working-directory: tools/cli
+        run: npm ci
+
+      - name: Validate schemas
+        id: validate-schemas
+        working-directory: tools/cli
+        run: |
+          echo "Validating Memory Bank schemas..."
+          npm run validate:schemas 2>&1 | tee schema-validation.log
+          echo "schema_valid=$?" >> $GITHUB_OUTPUT
+
+      - name: Validate project context
+        id: validate-context
+        working-directory: tools/cli
+        run: |
+          echo "Validating project context..."
+          npm run validate:context 2>&1 | tee context-validation.log
+          echo "context_valid=$?" >> $GITHUB_OUTPUT
+
+      - name: Validate module definitions
+        id: validate-modules
+        working-directory: tools/cli
+        run: |
+          echo "Validating module definitions..."
+          npm run validate:modules 2>&1 | tee module-validation.log
+          echo "modules_valid=$?" >> $GITHUB_OUTPUT
+
+      - name: Validate ADRs
+        id: validate-adrs
+        run: |
+          echo "Validating Architecture Decision Records..."
+          find ${{ env.MEMORY_BANK_PATH }}/decisions -name "ADR-*.md" | while read adr; do
+            echo "Validating: $adr"
+            # Check for required sections
+            for section in "Status" "Context" "Decision" "Consequences"; do
+              if ! grep -q "## $section" "$adr"; then
+                echo "::warning file=$adr::Missing required section: $section"
+              fi
+            done
+          done
+
+      - name: Generate validation report
+        id: validate
+        run: |
+          echo "## Memory Bank Validation Report" >> validation-report.md
+          echo "" >> validation-report.md
+          echo "| Check | Status |" >> validation-report.md
+          echo "|-------|--------|" >> validation-report.md
+
+          # Aggregate results
+          passed=true
+
+          if [ -f tools/cli/schema-validation.log ]; then
+            if grep -q "error" tools/cli/schema-validation.log; then
+              echo "| Schema Validation | :x: Failed |" >> validation-report.md
+              passed=false
+            else
+              echo "| Schema Validation | :white_check_mark: Passed |" >> validation-report.md
+            fi
+          fi
+
+          if [ -f tools/cli/context-validation.log ]; then
+            if grep -q "error" tools/cli/context-validation.log; then
+              echo "| Context Validation | :x: Failed |" >> validation-report.md
+              passed=false
+            else
+              echo "| Context Validation | :white_check_mark: Passed |" >> validation-report.md
+            fi
+          fi
+
+          echo "" >> validation-report.md
+          echo "Run ID: ${{ github.run_id }}" >> validation-report.md
+
+          echo "passed=$passed" >> $GITHUB_OUTPUT
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat validation-report.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: validation-report.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const report = `${{ steps.validate.outputs.report }}`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  sync:
+    name: Sync Memory Bank
+    needs: validate
+    if: |
+      github.event_name == 'push' &&
+      needs.validate.outputs.validation_passed == 'true' &&
+      github.event.inputs.validate_only != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: tools/cli/package-lock.json
+
+      - name: Install CLI dependencies
+        working-directory: tools/cli
+        run: npm ci
+
+      - name: Sync Memory Bank
+        working-directory: tools/cli
+        run: |
+          echo "Syncing Memory Bank contents..."
+
+          # Export Memory Bank to JSON for dashboards
+          npm run memory:export -- --output ../../memory-bank/exports/
+
+          # Generate indexes
+          npm run memory:index
+
+          echo "Memory Bank sync completed"
+
+      - name: Commit sync results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add memory-bank/exports/
+            git add memory-bank/indexes/
+            git commit -m "chore: sync memory bank exports [skip ci]"
+            git push
+          else
+            echo "No changes to sync"
+          fi
+
+  notify:
+    name: Notify on Changes
+    needs: [validate, sync]
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ "${{ needs.validate.outputs.validation_passed }}" == "true" ]; then
+            status="✅ Memory Bank sync completed successfully"
+          else
+            status="❌ Memory Bank validation failed"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\": \"$status\n\nCommit: ${{ github.sha }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            $SLACK_WEBHOOK_URL || true

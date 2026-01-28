@@ -1,0 +1,330 @@
+name: PR Context Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+
+env:
+  NODE_VERSION: '20'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-pr-context:
+    name: Check PR Context
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR description
+        id: check-description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            const checks = {
+              hasDescription: body.length > 50,
+              hasSummary: /##\s*(summary|overview|description)/i.test(body),
+              hasTestPlan: /##\s*(test|testing|verification)/i.test(body),
+              hasLinkedIssue: /(close[sd]?|fix(es|ed)?|resolve[sd]?)\s*#\d+/i.test(body) ||
+                             /#\d+/.test(body) ||
+                             /\[.*\]\(.*issues\/\d+\)/.test(body),
+              hasBreakingChangeNote: !pr.labels.some(l => l.name === 'breaking-change') ||
+                                    /##\s*breaking/i.test(body)
+            };
+
+            const score = Object.values(checks).filter(Boolean).length;
+            const maxScore = Object.keys(checks).length;
+
+            core.setOutput('checks', JSON.stringify(checks));
+            core.setOutput('score', score);
+            core.setOutput('max_score', maxScore);
+            core.setOutput('percentage', Math.round((score / maxScore) * 100));
+
+            return checks;
+
+      - name: Check for Memory Bank updates
+        id: check-memory-bank
+        run: |
+          # Check if PR touches areas that should update Memory Bank
+
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Areas that might need Memory Bank updates
+          needs_adr=false
+          needs_module_update=false
+          needs_knowledge=false
+
+          # Check for architectural changes
+          if echo "$changed_files" | grep -qE "^(src/services|src/api|src/core)"; then
+            needs_adr=true
+          fi
+
+          # Check for new modules
+          if echo "$changed_files" | grep -qE "^src/[^/]+/$" ; then
+            needs_module_update=true
+          fi
+
+          # Check for significant changes (more than 500 lines)
+          additions=${{ github.event.pull_request.additions }}
+          if [ "$additions" -gt 500 ]; then
+            needs_knowledge=true
+          fi
+
+          echo "needs_adr=$needs_adr" >> $GITHUB_OUTPUT
+          echo "needs_module_update=$needs_module_update" >> $GITHUB_OUTPUT
+          echo "needs_knowledge=$needs_knowledge" >> $GITHUB_OUTPUT
+
+      - name: Check for documentation updates
+        id: check-docs
+        run: |
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Check if code changes have corresponding doc changes
+          has_code_changes=$(echo "$changed_files" | grep -cE '\.(ts|js|tsx|jsx|java|cs|py)$' || true)
+          has_doc_changes=$(echo "$changed_files" | grep -cE '\.(md|mdx)$' || true)
+
+          # Check if README was updated for significant changes
+          readme_updated=$(echo "$changed_files" | grep -c "README" || true)
+
+          echo "has_code_changes=$has_code_changes" >> $GITHUB_OUTPUT
+          echo "has_doc_changes=$has_doc_changes" >> $GITHUB_OUTPUT
+          echo "readme_updated=$readme_updated" >> $GITHUB_OUTPUT
+
+      - name: Load Memory Bank context
+        id: memory-context
+        run: |
+          # Get relevant module context for changed files
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Find relevant modules
+          relevant_modules=""
+          if [ -d "memory-bank/modules" ]; then
+            for module_file in memory-bank/modules/*.json; do
+              if [ -f "$module_file" ]; then
+                module_paths=$(jq -r '.paths[]?' "$module_file" 2>/dev/null || true)
+                for path in $module_paths; do
+                  if echo "$changed_files" | grep -q "^$path"; then
+                    module_name=$(basename "$module_file" .json)
+                    relevant_modules="$relevant_modules $module_name"
+                  fi
+                done
+              fi
+            done
+          fi
+
+          echo "relevant_modules=$relevant_modules" >> $GITHUB_OUTPUT
+
+      - name: Generate context report
+        id: report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checks = JSON.parse('${{ steps.check-description.outputs.checks }}');
+            const score = ${{ steps.check-description.outputs.score }};
+            const maxScore = ${{ steps.check-description.outputs.max_score }};
+            const percentage = ${{ steps.check-description.outputs.percentage }};
+
+            let report = '## PR Context Check Report\n\n';
+
+            // Score badge
+            let badge = percentage >= 80 ? '🟢' : percentage >= 60 ? '🟡' : '🔴';
+            report += `**Context Score**: ${badge} ${score}/${maxScore} (${percentage}%)\n\n`;
+
+            // Description checks
+            report += '### PR Description\n';
+            report += `| Check | Status |\n`;
+            report += `|-------|--------|\n`;
+            report += `| Has meaningful description | ${checks.hasDescription ? '✅' : '❌'} |\n`;
+            report += `| Has summary section | ${checks.hasSummary ? '✅' : '⚠️ Recommended'} |\n`;
+            report += `| Has test plan | ${checks.hasTestPlan ? '✅' : '⚠️ Recommended'} |\n`;
+            report += `| Links to issue | ${checks.hasLinkedIssue ? '✅' : '⚠️ Recommended'} |\n`;
+            report += `| Breaking change documented | ${checks.hasBreakingChangeNote ? '✅' : 'N/A'} |\n`;
+            report += '\n';
+
+            // Memory Bank context
+            const needsAdr = '${{ steps.check-memory-bank.outputs.needs_adr }}' === 'true';
+            const needsModuleUpdate = '${{ steps.check-memory-bank.outputs.needs_module_update }}' === 'true';
+            const needsKnowledge = '${{ steps.check-memory-bank.outputs.needs_knowledge }}' === 'true';
+            const relevantModules = '${{ steps.memory-context.outputs.relevant_modules }}'.trim();
+
+            if (needsAdr || needsModuleUpdate || needsKnowledge || relevantModules) {
+              report += '### Memory Bank\n';
+
+              if (relevantModules) {
+                report += `**Relevant Modules**: ${relevantModules}\n\n`;
+              }
+
+              if (needsAdr) {
+                report += '> 💡 This PR includes architectural changes. Consider creating an ADR.\n\n';
+              }
+
+              if (needsModuleUpdate) {
+                report += '> 💡 This PR adds new components. Consider updating module documentation.\n\n';
+              }
+
+              if (needsKnowledge) {
+                report += '> 💡 This is a significant change. Consider documenting learnings.\n\n';
+              }
+            }
+
+            // Documentation check
+            const hasCodeChanges = parseInt('${{ steps.check-docs.outputs.has_code_changes }}') > 0;
+            const hasDocChanges = parseInt('${{ steps.check-docs.outputs.has_doc_changes }}') > 0;
+
+            if (hasCodeChanges && !hasDocChanges) {
+              report += '### Documentation\n';
+              report += '> ⚠️ Code changes detected but no documentation updates. ';
+              report += 'Consider if documentation needs updating.\n\n';
+            }
+
+            // Recommendations
+            const recommendations = [];
+            if (!checks.hasDescription) {
+              recommendations.push('Add a meaningful PR description (50+ characters)');
+            }
+            if (!checks.hasSummary) {
+              recommendations.push('Add a "## Summary" section explaining the changes');
+            }
+            if (!checks.hasTestPlan) {
+              recommendations.push('Add a "## Test Plan" section describing how to verify');
+            }
+            if (!checks.hasLinkedIssue) {
+              recommendations.push('Link to related issues using "Fixes #123" or similar');
+            }
+
+            if (recommendations.length > 0) {
+              report += '### Recommendations\n';
+              recommendations.forEach(r => {
+                report += `- [ ] ${r}\n`;
+              });
+            }
+
+            core.setOutput('report', report);
+            core.setOutput('needs_improvement', percentage < 60);
+
+            return report;
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const report = `${{ steps.report.outputs.report }}`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.data.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('PR Context Check Report')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+
+      - name: Set status check
+        if: steps.report.outputs.needs_improvement == 'true'
+        run: |
+          echo "::warning::PR context score is below 60%. Please improve the PR description."
+          # Don't fail the check, just warn
+          # exit 1
+
+  check-code-review-readiness:
+    name: Check Review Readiness
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check PR size
+        id: size
+        run: |
+          additions=${{ github.event.pull_request.additions }}
+          deletions=${{ github.event.pull_request.deletions }}
+          files=${{ github.event.pull_request.changed_files }}
+
+          total=$((additions + deletions))
+
+          if [ $total -gt 1000 ]; then
+            size="XL"
+            recommendation="Consider splitting into smaller PRs"
+          elif [ $total -gt 500 ]; then
+            size="L"
+            recommendation="Large PR - ensure thorough review"
+          elif [ $total -gt 200 ]; then
+            size="M"
+            recommendation="Good size for review"
+          else
+            size="S"
+            recommendation="Quick review possible"
+          fi
+
+          echo "size=$size" >> $GITHUB_OUTPUT
+          echo "total=$total" >> $GITHUB_OUTPUT
+          echo "recommendation=$recommendation" >> $GITHUB_OUTPUT
+
+      - name: Add size label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const size = '${{ steps.size.outputs.size }}';
+            const labelName = `size/${size}`;
+
+            // Remove existing size labels
+            const existingLabels = context.payload.pull_request.labels
+              .filter(l => l.name.startsWith('size/'))
+              .map(l => l.name);
+
+            for (const label of existingLabels) {
+              if (label !== labelName) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: label
+                }).catch(() => {}); // Ignore if label doesn't exist
+              }
+            }
+
+            // Add new size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [labelName]
+            }).catch(() => {
+              console.log(`Note: Label ${labelName} may not exist`);
+            });
