@@ -27,7 +27,7 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 | Fase 2: Java/Spring | 🟢 Completado | 100% | 2025-01-27 | 2025-01-27 |
 | Fase 3: .NET | ⚪ Pendiente | 0% | - | - |
 | Fase 4: Team Workflows + MCP | ⚪ Pendiente | 0% | - | - |
-| Fase 5: VS Code Extension | ⚪ Pendiente | 0% | - | - |
+| Fase 5: VS Code Extension | 🟡 En progreso | 90% | 2026-01-27 | - |
 | Fase 6: Web Dashboard | ⚪ Pendiente | 0% | - | - |
 | Fase 7: Migrador + Polish | ⚪ Pendiente | 0% | - | - |
 
@@ -380,33 +380,33 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 5.1.1 | Estructura proyecto extension | ⚪ Pendiente | Alta | yo code generator |
-| 5.1.2 | package.json extension | ⚪ Pendiente | Alta | Contributes, activation |
-| 5.1.3 | extension.ts entry point | ⚪ Pendiente | Alta | Activación |
+| 5.1.1 | Estructura proyecto extension | 🟢 Completado | Alta | tools/vscode-extension/ |
+| 5.1.2 | package.json extension | 🟢 Completado | Alta | Contributes, activation, commands |
+| 5.1.3 | extension.ts entry point | 🟢 Completado | Alta | Con MemoryBankService |
 
 ### 5.2 Memory Bank Provider
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 5.2.1 | TreeView provider | ⚪ Pendiente | Alta | Vista árbol MB |
-| 5.2.2 | Context editor | ⚪ Pendiente | Alta | Editor contextos |
-| 5.2.3 | Sync functionality | ⚪ Pendiente | Alta | Sincronización |
+| 5.2.1 | TreeView provider | 🟢 Completado | Alta | MemoryBankExplorerProvider |
+| 5.2.2 | Context editor | 🟢 Completado | Alta | Open/create context files |
+| 5.2.3 | Sync functionality | 🟢 Completado | Alta | File watcher + refresh |
 
 ### 5.3 Comandos Extension
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 5.3.1 | init-project command | ⚪ Pendiente | Alta | Inicializar |
-| 5.3.2 | update-context command | ⚪ Pendiente | Alta | Actualizar contexto |
-| 5.3.3 | add-decision command | ⚪ Pendiente | Alta | Añadir ADR |
-| 5.3.4 | select-agent command | ⚪ Pendiente | Media | Selector agentes |
+| 5.3.1 | init-project command | 🟢 Completado | Alta | egce.initProject |
+| 5.3.2 | update-context command | 🟢 Completado | Alta | egce.updateContext |
+| 5.3.3 | add-decision command | 🟢 Completado | Alta | egce.addDecision (ADR) |
+| 5.3.4 | select-agent command | 🟢 Completado | Media | egce.selectAgent con QuickPick |
 
 ### 5.4 Publicación
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 5.4.1 | Icons y assets | ⚪ Pendiente | Media | Recursos visuales |
-| 5.4.2 | README extension | ⚪ Pendiente | Alta | Documentación |
+| 5.4.1 | Icons y assets | 🟢 Completado | Media | memory-bank.svg |
+| 5.4.2 | README extension | 🟢 Completado | Alta | Documentación completa |
 | 5.4.3 | Publicar en Marketplace | ⚪ Pendiente | Alta | vsce publish |
 
 ---
