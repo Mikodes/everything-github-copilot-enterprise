@@ -25,12 +25,16 @@
   "workspaces": [
     "tools/cli",
     "tools/vscode-extension",
-    "tools/web-dashboard"
+    "tools/web-dashboard",
+    "tools/memory-service"
   ],
   "scripts": {
     "cli": "npm run --workspace=tools/cli",
     "extension": "npm run --workspace=tools/vscode-extension",
     "dashboard": "npm run --workspace=tools/web-dashboard",
+    "memory-service": "npm run --workspace=tools/memory-service",
+    "memory-service:dev": "npm run dev --workspace=tools/memory-service",
+    "memory-service:docker": "npm run docker:up --workspace=tools/memory-service",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
