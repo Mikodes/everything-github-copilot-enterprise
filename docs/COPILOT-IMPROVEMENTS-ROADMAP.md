@@ -9,7 +9,7 @@
 
 ## Resumen Ejecutivo
 
-Este documento presenta un **roadmap de mejoras comprehensivo** para optimizar el uso de GitHub Copilot en equipos enterprise. Se identifican **8 áreas clave de mejora** con **47 propuestas específicas**, organizadas por prioridad e impacto.
+Este documento presenta un **roadmap de mejoras comprehensivo** para optimizar el uso de GitHub Copilot en equipos enterprise. Se identifican **9 áreas clave de mejora** con **52 propuestas específicas**, organizadas por prioridad e impacto.
 
 ### Problemas Identificados en el Estado Actual
 
@@ -624,6 +624,48 @@ Solo hay extensión para VS Code, excluyendo usuarios de JetBrains IDEs.
 
 ---
 
+## ÁREA 9: Feature Planning Wizard (NUEVA)
+
+### Problema Actual
+La planificación de features en equipos enterprise es manual, fragmentada y desconectada del contexto técnico:
+- ❌ PMs describen features sin conocer la arquitectura
+- ❌ Estimaciones imprecisas por falta de visibilidad de impacto
+- ❌ Backlog con tareas mal dimensionadas
+- ❌ Sin conexión automática con ADRs y patterns existentes
+
+### Propuestas de Mejora
+
+#### 9.1 Wizard de Planificación Guiada (Alta Prioridad)
+
+| ID | Mejora | Descripción | Impacto | Esfuerzo |
+|----|--------|-------------|---------|----------|
+| P9.1.1 | **Formulario Guiado Multi-Step** | Wizard que guía al usuario a describir su feature paso a paso | Alto | Medio |
+| P9.1.2 | **AI-Assisted Refinement** | Chat con Copilot para refinar requisitos y hacer preguntas clarificadoras | Alto | Medio |
+| P9.1.3 | **Auto-Context Enrichment** | Cargar automáticamente contexto relevante del Memory Bank | Alto | Bajo |
+| P9.1.4 | **Backlog Generation** | Generación automática de épicas, stories, tasks con ACs | Alto | Alto |
+
+#### 9.2 Visualización de Backlog (Media Prioridad)
+
+| ID | Mejora | Descripción | Impacto | Esfuerzo |
+|----|--------|-------------|---------|----------|
+| P9.2.1 | **Vista Kanban** | Visualizar backlog generado en formato Kanban | Medio | Bajo |
+| P9.2.2 | **Vista Timeline** | Gantt chart con fases de implementación | Medio | Medio |
+| P9.2.3 | **Grafo de Dependencias** | Visualización interactiva de dependencias entre items | Medio | Medio |
+| P9.2.4 | **Edición Inline** | Editar backlog generado antes de exportar | Alto | Bajo |
+
+#### 9.3 Export e Integraciones (Alta Prioridad)
+
+| ID | Mejora | Descripción | Impacto | Esfuerzo |
+|----|--------|-------------|---------|----------|
+| P9.3.1 | **Export a GitHub Issues** | Crear issues, milestones y labels automáticamente | Alto | Medio |
+| P9.3.2 | **Export a Jira** | Crear épicas, stories y subtasks en Jira | Alto | Medio |
+| P9.3.3 | **Export a Azure DevOps** | Crear work items en Azure DevOps | Medio | Medio |
+| P9.3.4 | **Guardar en Memory Bank** | Persistir sesión de planificación en Memory Bank | Alto | Bajo |
+
+**Ver especificación completa en**: `docs/features/FEATURE-PLANNING-WIZARD.md`
+
+---
+
 ## Plan de Implementación Recomendado
 
 ### Fase Inmediata (Sprint 1-2): Quick Wins
@@ -645,6 +687,7 @@ Solo hay extensión para VS Code, excluyendo usuarios de JetBrains IDEs.
 | 3 | V2.2.1 | Inline Context Panel | Medio |
 | 4 | M1.2.1 | Auto-Context Detection | Medio |
 | 5 | W5.2.2 | ADR Compliance Checker | Medio |
+| 6 | **P9.1.1-4** | **Feature Planning Wizard MVP** | **Medio** |
 
 ### Fase Media (Sprint 7-12): Core Improvements
 
