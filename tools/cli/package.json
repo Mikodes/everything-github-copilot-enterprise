@@ -1,6 +1,6 @@
 {
   "name": "egce",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Everything GitHub Copilot Enterprise - CLI tool for managing Memory Bank and Copilot configurations",
   "main": "lib/index.js",
   "bin": {
