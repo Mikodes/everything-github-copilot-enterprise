@@ -1,0 +1,564 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcp/main/schema/mcp.json",
+  "name": "github-enterprise",
+  "version": "1.0.0",
+  "description": "MCP configuration for GitHub Enterprise integration providing access to repositories, issues, pull requests, actions, and discussions",
+
+  "server": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-github"
+    ],
+    "env": {
+      "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+      "GITHUB_ENTERPRISE_URL": "${GITHUB_ENTERPRISE_URL}"
+    }
+  },
+
+  "tools": [
+    {
+      "name": "github_search_repositories",
+      "description": "Search for repositories",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query (supports GitHub search qualifiers)"
+          },
+          "sort": {
+            "type": "string",
+            "enum": ["stars", "forks", "updated", "help-wanted-issues"],
+            "description": "Sort field"
+          },
+          "order": {
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "default": "desc"
+          },
+          "perPage": {
+            "type": "number",
+            "default": 30
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "github_get_repository",
+      "description": "Get repository information",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "Repository owner"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name"
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    {
+      "name": "github_get_file_contents",
+      "description": "Get file or directory contents from a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "File path in the repository"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Git ref (branch, tag, commit)",
+            "default": "main"
+          }
+        },
+        "required": ["owner", "repo", "path"]
+      }
+    },
+    {
+      "name": "github_search_code",
+      "description": "Search code across repositories",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Code search query"
+          },
+          "perPage": {
+            "type": "number",
+            "default": 30
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "github_list_issues",
+      "description": "List issues in a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["open", "closed", "all"],
+            "default": "open"
+          },
+          "labels": {
+            "type": "string",
+            "description": "Comma-separated list of labels"
+          },
+          "assignee": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "string",
+            "enum": ["created", "updated", "comments"],
+            "default": "created"
+          },
+          "perPage": {
+            "type": "number",
+            "default": 30
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    {
+      "name": "github_get_issue",
+      "description": "Get a specific issue with comments",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "issueNumber": {
+            "type": "number"
+          },
+          "includeComments": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["owner", "repo", "issueNumber"]
+      }
+    },
+    {
+      "name": "github_list_pull_requests",
+      "description": "List pull requests in a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["open", "closed", "all"],
+            "default": "open"
+          },
+          "head": {
+            "type": "string",
+            "description": "Filter by head branch"
+          },
+          "base": {
+            "type": "string",
+            "description": "Filter by base branch"
+          },
+          "sort": {
+            "type": "string",
+            "enum": ["created", "updated", "popularity", "long-running"],
+            "default": "created"
+          },
+          "perPage": {
+            "type": "number",
+            "default": 30
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    {
+      "name": "github_get_pull_request",
+      "description": "Get detailed pull request information",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "pullNumber": {
+            "type": "number"
+          },
+          "includeComments": {
+            "type": "boolean",
+            "default": true
+          },
+          "includeReviews": {
+            "type": "boolean",
+            "default": true
+          },
+          "includeFiles": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["owner", "repo", "pullNumber"]
+      }
+    },
+    {
+      "name": "github_get_pr_diff",
+      "description": "Get the diff for a pull request",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "pullNumber": {
+            "type": "number"
+          }
+        },
+        "required": ["owner", "repo", "pullNumber"]
+      }
+    },
+    {
+      "name": "github_list_workflow_runs",
+      "description": "List workflow runs for a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "workflowId": {
+            "type": "string",
+            "description": "Workflow file name or ID"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "action_required", "cancelled", "failure", "neutral", "skipped", "stale", "success", "timed_out", "in_progress", "queued", "requested", "waiting"]
+          },
+          "perPage": {
+            "type": "number",
+            "default": 20
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    {
+      "name": "github_get_workflow_run",
+      "description": "Get a specific workflow run with job details",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "number"
+          },
+          "includeJobs": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": ["owner", "repo", "runId"]
+      }
+    },
+    {
+      "name": "github_get_workflow_run_logs",
+      "description": "Get logs from a workflow run",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "number"
+          }
+        },
+        "required": ["owner", "repo", "runId"]
+      }
+    },
+    {
+      "name": "github_list_commits",
+      "description": "List commits in a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string",
+            "description": "Branch or commit SHA"
+          },
+          "path": {
+            "type": "string",
+            "description": "Filter by file path"
+          },
+          "author": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "description": "ISO 8601 date"
+          },
+          "perPage": {
+            "type": "number",
+            "default": 30
+          }
+        },
+        "required": ["owner", "repo"]
+      }
+    },
+    {
+      "name": "github_get_commit",
+      "description": "Get a specific commit with diff",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          }
+        },
+        "required": ["owner", "repo", "sha"]
+      }
+    },
+    {
+      "name": "github_compare_commits",
+      "description": "Compare two commits or branches",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "base": {
+            "type": "string",
+            "description": "Base branch or commit"
+          },
+          "head": {
+            "type": "string",
+            "description": "Head branch or commit"
+          }
+        },
+        "required": ["owner", "repo", "base", "head"]
+      }
+    },
+    {
+      "name": "github_create_issue_comment",
+      "description": "Create a comment on an issue or PR",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": {
+            "type": "string"
+          },
+          "repo": {
+            "type": "string"
+          },
+          "issueNumber": {
+            "type": "number"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": ["owner", "repo", "issueNumber", "body"]
+      }
+    }
+  ],
+
+  "resources": [
+    {
+      "name": "repository_context",
+      "description": "Complete repository context including README, structure, and recent activity",
+      "uriTemplate": "github://{owner}/{repo}/context"
+    },
+    {
+      "name": "pr_context",
+      "description": "Full PR context with linked issues, reviews, and CI status",
+      "uriTemplate": "github://{owner}/{repo}/pull/{number}/context"
+    },
+    {
+      "name": "issue_context",
+      "description": "Issue context with comments, labels, and linked PRs",
+      "uriTemplate": "github://{owner}/{repo}/issues/{number}/context"
+    }
+  ],
+
+  "prompts": [
+    {
+      "name": "pr_review_context",
+      "description": "Get full context for reviewing a PR",
+      "template": "Get complete context for PR #{{pullNumber}} in {{owner}}/{{repo}}:\n- PR description and changes\n- Linked issues and requirements\n- CI/CD status\n- Review comments\n- File changes summary"
+    },
+    {
+      "name": "issue_investigation",
+      "description": "Investigate an issue",
+      "template": "Investigate issue #{{issueNumber}} in {{owner}}/{{repo}}:\n- Issue details and labels\n- Discussion history\n- Related PRs or commits\n- Similar past issues"
+    },
+    {
+      "name": "workflow_failure",
+      "description": "Analyze a workflow failure",
+      "template": "Analyze workflow run #{{runId}} failure in {{owner}}/{{repo}}:\n- Identify failing job and step\n- Extract relevant error logs\n- Find the triggering commit\n- Suggest fixes"
+    },
+    {
+      "name": "codebase_exploration",
+      "description": "Explore repository structure",
+      "template": "Explore the codebase of {{owner}}/{{repo}}:\n- Directory structure\n- Key files and their purposes\n- Documentation overview\n- Recent significant changes"
+    }
+  ],
+
+  "configuration": {
+    "caching": {
+      "enabled": true,
+      "ttl": 300,
+      "maxSize": "100MB"
+    },
+    "rateLimiting": {
+      "requestsPerHour": 5000,
+      "burstLimit": 100
+    },
+    "permissions": {
+      "repos": {
+        "read": true,
+        "write": false
+      },
+      "issues": {
+        "read": true,
+        "write": true
+      },
+      "pullRequests": {
+        "read": true,
+        "write": false
+      },
+      "actions": {
+        "read": true,
+        "write": false
+      }
+    }
+  },
+
+  "useCases": {
+    "codeReview": {
+      "description": "Get context for reviewing pull requests",
+      "workflow": [
+        "1. Get PR details with github_get_pull_request",
+        "2. Review diff with github_get_pr_diff",
+        "3. Check CI status with github_list_workflow_runs",
+        "4. Get linked issue context"
+      ]
+    },
+    "issueInvestigation": {
+      "description": "Investigate and understand issues",
+      "workflow": [
+        "1. Get issue details with github_get_issue",
+        "2. Search for related code with github_search_code",
+        "3. Find recent commits to affected areas",
+        "4. Review similar past issues"
+      ]
+    },
+    "cicdDebugging": {
+      "description": "Debug CI/CD failures",
+      "workflow": [
+        "1. Get workflow run with github_get_workflow_run",
+        "2. Retrieve logs with github_get_workflow_run_logs",
+        "3. Get triggering commit with github_get_commit",
+        "4. Compare with previous successful run"
+      ]
+    },
+    "codebaseExploration": {
+      "description": "Understand a new codebase",
+      "workflow": [
+        "1. Get repository info with github_get_repository",
+        "2. Read README and docs with github_get_file_contents",
+        "3. List recent commits with github_list_commits",
+        "4. Browse directory structure"
+      ]
+    }
+  },
+
+  "setup": {
+    "requirements": [
+      "GitHub account with appropriate access",
+      "Personal Access Token (PAT) or GitHub App",
+      "Access to repositories, issues, and actions"
+    ],
+    "environmentVariables": {
+      "GITHUB_TOKEN": {
+        "description": "GitHub Personal Access Token or App token",
+        "sensitive": true,
+        "requiredScopes": [
+          "repo (full control for private repos)",
+          "read:org (if accessing org resources)"
+        ]
+      },
+      "GITHUB_ENTERPRISE_URL": {
+        "description": "GitHub Enterprise Server URL (optional)",
+        "example": "https://github.yourcompany.com/api/v3",
+        "optional": true
+      }
+    }
+  }
+}

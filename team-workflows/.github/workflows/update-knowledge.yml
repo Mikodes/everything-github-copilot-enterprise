@@ -1,0 +1,343 @@
+name: Update Knowledge Base
+
+on:
+  issues:
+    types: [closed]
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Knowledge source to process'
+        required: true
+        type: choice
+        options:
+          - recent-issues
+          - recent-prs
+          - incident-reports
+          - all
+      days_back:
+        description: 'Number of days to look back'
+        required: false
+        default: '7'
+
+env:
+  NODE_VERSION: '20'
+  KNOWLEDGE_PATH: './memory-bank/knowledge'
+
+jobs:
+  extract-from-issues:
+    name: Extract Knowledge from Issues
+    if: |
+      github.event_name == 'issues' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.source == 'recent-issues' || github.event.inputs.source == 'all'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract knowledge from closed issue
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+
+            // Check if issue has knowledge-worthy labels
+            const knowledgeLabels = ['documentation', 'bug', 'learning', 'how-to', 'faq'];
+            const hasKnowledgeLabel = issue.labels.some(l =>
+              knowledgeLabels.includes(l.name.toLowerCase())
+            );
+
+            if (!hasKnowledgeLabel) {
+              console.log('Issue does not have knowledge-worthy labels, skipping');
+              return;
+            }
+
+            // Get issue comments for full context
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number
+            });
+
+            // Prepare knowledge entry
+            const entry = {
+              source: 'github-issue',
+              issueNumber: issue.number,
+              title: issue.title,
+              body: issue.body,
+              labels: issue.labels.map(l => l.name),
+              comments: comments.data.map(c => ({
+                author: c.user.login,
+                body: c.body,
+                created: c.created_at
+              })),
+              closedAt: issue.closed_at,
+              resolution: issue.state_reason
+            };
+
+            // Save for processing
+            const fs = require('fs');
+            fs.mkdirSync('knowledge-queue', { recursive: true });
+            fs.writeFileSync(
+              `knowledge-queue/issue-${issue.number}.json`,
+              JSON.stringify(entry, null, 2)
+            );
+
+            console.log(`Queued issue #${issue.number} for knowledge extraction`);
+
+      - name: Process recent issues
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const daysBack = parseInt('${{ github.event.inputs.days_back }}') || 7;
+            const since = new Date();
+            since.setDate(since.getDate() - daysBack);
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              since: since.toISOString(),
+              per_page: 50
+            });
+
+            const knowledgeLabels = ['documentation', 'bug', 'learning', 'how-to', 'faq'];
+            const fs = require('fs');
+            fs.mkdirSync('knowledge-queue', { recursive: true });
+
+            let count = 0;
+            for (const issue of issues.data) {
+              const hasKnowledgeLabel = issue.labels.some(l =>
+                knowledgeLabels.includes(l.name.toLowerCase())
+              );
+
+              if (hasKnowledgeLabel) {
+                fs.writeFileSync(
+                  `knowledge-queue/issue-${issue.number}.json`,
+                  JSON.stringify({
+                    source: 'github-issue',
+                    issueNumber: issue.number,
+                    title: issue.title,
+                    body: issue.body,
+                    labels: issue.labels.map(l => l.name),
+                    closedAt: issue.closed_at
+                  }, null, 2)
+                );
+                count++;
+              }
+            }
+
+            console.log(`Queued ${count} issues for knowledge extraction`);
+
+      - name: Upload knowledge queue
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-knowledge-queue
+          path: knowledge-queue/
+          if-no-files-found: ignore
+
+  extract-from-prs:
+    name: Extract Knowledge from PRs
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.source == 'recent-prs' || github.event.inputs.source == 'all'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract knowledge from merged PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Check if PR has significant changes worth documenting
+            const significantLabels = ['feature', 'architecture', 'breaking-change', 'documentation'];
+            const isSignificant = pr.labels.some(l =>
+              significantLabels.includes(l.name.toLowerCase())
+            ) || pr.additions > 500;
+
+            if (!isSignificant) {
+              console.log('PR does not meet significance threshold, skipping');
+              return;
+            }
+
+            // Get PR review comments
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            // Get file changes summary
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const entry = {
+              source: 'github-pr',
+              prNumber: pr.number,
+              title: pr.title,
+              body: pr.body,
+              labels: pr.labels.map(l => l.name),
+              mergedAt: pr.merged_at,
+              author: pr.user.login,
+              reviews: reviews.data.map(r => ({
+                state: r.state,
+                body: r.body,
+                reviewer: r.user.login
+              })),
+              filesChanged: files.data.map(f => ({
+                filename: f.filename,
+                status: f.status,
+                additions: f.additions,
+                deletions: f.deletions
+              })),
+              stats: {
+                additions: pr.additions,
+                deletions: pr.deletions,
+                changedFiles: pr.changed_files
+              }
+            };
+
+            const fs = require('fs');
+            fs.mkdirSync('knowledge-queue', { recursive: true });
+            fs.writeFileSync(
+              `knowledge-queue/pr-${pr.number}.json`,
+              JSON.stringify(entry, null, 2)
+            );
+
+            console.log(`Queued PR #${pr.number} for knowledge extraction`);
+
+      - name: Upload knowledge queue
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-knowledge-queue
+          path: knowledge-queue/
+          if-no-files-found: ignore
+
+  process-knowledge:
+    name: Process Knowledge Queue
+    needs: [extract-from-issues, extract-from-prs]
+    if: always() && (needs.extract-from-issues.result == 'success' || needs.extract-from-prs.result == 'success')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download knowledge artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: knowledge-artifacts
+          merge-multiple: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: tools/cli/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/cli
+        run: npm ci
+
+      - name: Process knowledge entries
+        run: |
+          echo "Processing knowledge queue..."
+
+          # Create output directory
+          mkdir -p knowledge-output
+
+          # Process each queued item
+          for file in knowledge-artifacts/*.json; do
+            if [ -f "$file" ]; then
+              echo "Processing: $file"
+
+              # Extract metadata
+              source=$(jq -r '.source' "$file")
+
+              case $source in
+                github-issue)
+                  # Generate troubleshooting or how-to entry
+                  number=$(jq -r '.issueNumber' "$file")
+                  title=$(jq -r '.title' "$file")
+                  echo "Creating knowledge entry for issue #$number: $title"
+                  ;;
+                github-pr)
+                  # Generate feature/change documentation
+                  number=$(jq -r '.prNumber' "$file")
+                  title=$(jq -r '.title' "$file")
+                  echo "Creating knowledge entry for PR #$number: $title"
+                  ;;
+              esac
+
+              # Copy to output for manual review
+              cp "$file" "knowledge-output/"
+            fi
+          done
+
+          echo "Knowledge processing completed"
+
+      - name: Create knowledge review issue
+        if: hashFiles('knowledge-output/*.json') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const files = fs.readdirSync('knowledge-output').filter(f => f.endsWith('.json'));
+
+            if (files.length === 0) return;
+
+            let body = '## Knowledge Entries Ready for Review\n\n';
+            body += 'The following items have been identified as potential knowledge base entries:\n\n';
+
+            for (const file of files) {
+              const content = JSON.parse(fs.readFileSync(`knowledge-output/${file}`));
+              const source = content.source === 'github-issue' ? 'Issue' : 'PR';
+              const number = content.issueNumber || content.prNumber;
+              body += `- [ ] **${source} #${number}**: ${content.title}\n`;
+            }
+
+            body += '\n### Next Steps\n';
+            body += '1. Review each item above\n';
+            body += '2. Create appropriate knowledge entries in `memory-bank/knowledge/`\n';
+            body += '3. Check off items as they are processed\n';
+            body += '4. Close this issue when complete\n';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Knowledge Review: ${files.length} entries ready for processing`,
+              body: body,
+              labels: ['knowledge-base', 'documentation']
+            });
+
+      - name: Upload processed knowledge
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-knowledge
+          path: knowledge-output/
+          if-no-files-found: ignore
