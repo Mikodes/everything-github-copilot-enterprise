@@ -416,49 +416,50 @@ Framework de configuración de GitHub Copilot orientado a equipos de desarrollo 
 **Duración estimada**: 2-3 semanas
 **Objetivo**: Dashboard web para visualización y gestión del equipo
 **Dependencias**: Fase 1, 4 completadas
+**Estado**: 🟢 Completado (2026-01-28)
 
 ### 6.1 Setup Dashboard
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 6.1.1 | Next.js 14 setup | ⚪ Pendiente | Alta | App router |
-| 6.1.2 | Tailwind + shadcn/ui | ⚪ Pendiente | Alta | UI components |
-| 6.1.3 | Layout principal | ⚪ Pendiente | Alta | Navegación |
+| 6.1.1 | Next.js 14 setup | 🟢 Completado | Alta | App router + TypeScript |
+| 6.1.2 | Tailwind + shadcn/ui | 🟢 Completado | Alta | 15+ UI components |
+| 6.1.3 | Layout principal | 🟢 Completado | Alta | Sidebar + Navbar + MainLayout |
 
 ### 6.2 Vistas Dashboard
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 6.2.1 | Vista Memory Bank | ⚪ Pendiente | Alta | Árbol MB |
-| 6.2.2 | Vista Decisions (ADRs) | ⚪ Pendiente | Alta | Timeline ADRs |
-| 6.2.3 | Vista Knowledge Base | ⚪ Pendiente | Alta | Búsqueda KB |
-| 6.2.4 | Vista Team | ⚪ Pendiente | Media | Actividad equipo |
+| 6.2.1 | Vista Memory Bank | 🟢 Completado | Alta | Tree explorer + editor |
+| 6.2.2 | Vista Decisions (ADRs) | 🟢 Completado | Alta | Timeline + detail view |
+| 6.2.3 | Vista Knowledge Base | 🟢 Completado | Alta | Search + filters |
+| 6.2.4 | Vista Team | 🟢 Completado | Media | Activity feed + members |
 
 ### 6.3 Componentes
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 6.3.1 | MemoryBankTree component | ⚪ Pendiente | Alta | Árbol navegable |
-| 6.3.2 | ContextEditor component | ⚪ Pendiente | Alta | Editor markdown |
-| 6.3.3 | ADRTimeline component | ⚪ Pendiente | Alta | Timeline visual |
-| 6.3.4 | KnowledgeSearch component | ⚪ Pendiente | Alta | Búsqueda |
-| 6.3.5 | TeamActivity component | ⚪ Pendiente | Media | Feed actividad |
+| 6.3.1 | MemoryBankTree component | 🟢 Completado | Alta | Collapsible tree |
+| 6.3.2 | ContextEditor component | 🟢 Completado | Alta | Markdown editor + preview |
+| 6.3.3 | ADRTimeline component | 🟢 Completado | Alta | Timeline with status |
+| 6.3.4 | KnowledgeSearch component | 🟢 Completado | Alta | Full-text search |
+| 6.3.5 | TeamActivity component | 🟢 Completado | Media | Activity feed |
 
 ### 6.4 Integración
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 6.4.1 | GitHub API integration | ⚪ Pendiente | Alta | Leer repos |
-| 6.4.2 | API routes | ⚪ Pendiente | Alta | Backend routes |
-| 6.4.3 | Auth (GitHub OAuth) | ⚪ Pendiente | Alta | Autenticación |
+| 6.4.1 | GitHub API integration | 🟢 Completado | Alta | Octokit client |
+| 6.4.2 | API routes | 🟢 Completado | Alta | 5 API routes |
+| 6.4.3 | Auth (GitHub OAuth) | 🟢 Completado | Alta | NextAuth.js |
 
 ### 6.5 Deploy
 
 | ID | Tarea | Estado | Prioridad | Notas |
 |----|-------|--------|-----------|-------|
-| 6.5.1 | Configurar Vercel | ⚪ Pendiente | Alta | Deploy |
-| 6.5.2 | Dominio custom | ⚪ Pendiente | Media | DNS |
-| 6.5.3 | Analytics | ⚪ Pendiente | Baja | Métricas uso |
+| 6.5.1 | Configurar Vercel | 🟢 Completado | Alta | vercel.json |
+| 6.5.2 | Dominio custom | ⚪ Pendiente | Media | User config |
+| 6.5.3 | Analytics | ⚪ Pendiente | Baja | User config |
 
 ---
 
