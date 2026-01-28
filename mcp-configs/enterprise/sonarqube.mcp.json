@@ -1,0 +1,478 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcp/main/schema/mcp.json",
+  "name": "sonarqube",
+  "version": "1.0.0",
+  "description": "MCP configuration for SonarQube integration providing access to code quality metrics, issues, security vulnerabilities, and quality gates",
+
+  "server": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@anthropic/mcp-sonarqube"
+    ],
+    "env": {
+      "SONARQUBE_URL": "${SONARQUBE_URL}",
+      "SONARQUBE_TOKEN": "${SONARQUBE_TOKEN}",
+      "SONARQUBE_ORGANIZATION": "${SONARQUBE_ORGANIZATION}"
+    }
+  },
+
+  "tools": [
+    {
+      "name": "sonar_search_projects",
+      "description": "Search for SonarQube projects",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query for project name or key"
+          },
+          "qualifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["TRK", "VW", "APP"]
+            },
+            "default": ["TRK"],
+            "description": "Component qualifiers (TRK=project, VW=portfolio, APP=application)"
+          },
+          "pageSize": {
+            "type": "number",
+            "default": 50
+          }
+        }
+      }
+    },
+    {
+      "name": "sonar_get_project_status",
+      "description": "Get project quality gate status and metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string",
+            "description": "SonarQube project key"
+          },
+          "branch": {
+            "type": "string",
+            "description": "Branch name (default branch if not specified)"
+          },
+          "pullRequest": {
+            "type": "string",
+            "description": "Pull request key (alternative to branch)"
+          }
+        },
+        "required": ["projectKey"]
+      }
+    },
+    {
+      "name": "sonar_get_measures",
+      "description": "Get quality measures for a project",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string",
+            "description": "Project key"
+          },
+          "metricKeys": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [
+              "bugs",
+              "vulnerabilities",
+              "code_smells",
+              "coverage",
+              "duplicated_lines_density",
+              "ncloc",
+              "reliability_rating",
+              "security_rating",
+              "sqale_rating",
+              "security_hotspots"
+            ],
+            "description": "Metrics to retrieve"
+          },
+          "branch": {
+            "type": "string"
+          }
+        },
+        "required": ["projectKey"]
+      }
+    },
+    {
+      "name": "sonar_search_issues",
+      "description": "Search for code issues (bugs, vulnerabilities, code smells)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKeys": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Project keys to search in"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["BUG", "VULNERABILITY", "CODE_SMELL"]
+            },
+            "description": "Issue types filter"
+          },
+          "severities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["BLOCKER", "CRITICAL", "MAJOR", "MINOR", "INFO"]
+            },
+            "description": "Severity filter"
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["OPEN", "CONFIRMED", "REOPENED", "RESOLVED", "CLOSED"]
+            },
+            "default": ["OPEN", "CONFIRMED", "REOPENED"]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Filter by file paths"
+          },
+          "rules": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Filter by rule keys"
+          },
+          "createdAfter": {
+            "type": "string",
+            "description": "ISO date for issues created after"
+          },
+          "pageSize": {
+            "type": "number",
+            "default": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "sonar_get_issue",
+      "description": "Get detailed information about a specific issue",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "issueKey": {
+            "type": "string",
+            "description": "Issue key"
+          }
+        },
+        "required": ["issueKey"]
+      }
+    },
+    {
+      "name": "sonar_get_security_hotspots",
+      "description": "Get security hotspots that need review",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["TO_REVIEW", "REVIEWED"],
+            "default": "TO_REVIEW"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "pageSize": {
+            "type": "number",
+            "default": 50
+          }
+        },
+        "required": ["projectKey"]
+      }
+    },
+    {
+      "name": "sonar_get_hotspot",
+      "description": "Get detailed information about a security hotspot",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "hotspotKey": {
+            "type": "string"
+          }
+        },
+        "required": ["hotspotKey"]
+      }
+    },
+    {
+      "name": "sonar_get_duplications",
+      "description": "Get code duplication information for a file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "File key (project:path/to/file)"
+          }
+        },
+        "required": ["key"]
+      }
+    },
+    {
+      "name": "sonar_get_rule",
+      "description": "Get details about a specific rule",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Rule key (e.g., 'java:S1234')"
+          }
+        },
+        "required": ["key"]
+      }
+    },
+    {
+      "name": "sonar_get_source",
+      "description": "Get source code with issue annotations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "File key"
+          },
+          "from": {
+            "type": "number",
+            "description": "Start line (1-indexed)"
+          },
+          "to": {
+            "type": "number",
+            "description": "End line"
+          }
+        },
+        "required": ["key"]
+      }
+    },
+    {
+      "name": "sonar_get_quality_gate",
+      "description": "Get quality gate definition",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Quality gate name (uses default if not specified)"
+          }
+        }
+      }
+    },
+    {
+      "name": "sonar_get_analysis_history",
+      "description": "Get project analysis history",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "description": "Start date (ISO format)"
+          },
+          "to": {
+            "type": "string",
+            "description": "End date (ISO format)"
+          },
+          "pageSize": {
+            "type": "number",
+            "default": 50
+          }
+        },
+        "required": ["projectKey"]
+      }
+    },
+    {
+      "name": "sonar_get_pr_analysis",
+      "description": "Get pull request analysis results",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "projectKey": {
+            "type": "string"
+          },
+          "pullRequest": {
+            "type": "string",
+            "description": "Pull request key"
+          }
+        },
+        "required": ["projectKey", "pullRequest"]
+      }
+    }
+  ],
+
+  "resources": [
+    {
+      "name": "project_quality_overview",
+      "description": "Complete quality overview for a project",
+      "uriTemplate": "sonar://projects/{projectKey}/overview"
+    },
+    {
+      "name": "project_security_status",
+      "description": "Security-focused view of a project",
+      "uriTemplate": "sonar://projects/{projectKey}/security"
+    },
+    {
+      "name": "file_issues",
+      "description": "All issues in a specific file",
+      "uriTemplate": "sonar://files/{fileKey}/issues"
+    }
+  ],
+
+  "prompts": [
+    {
+      "name": "quality_assessment",
+      "description": "Get quality assessment for a project",
+      "template": "Analyze the code quality of {{projectKey}}:\n- Quality gate status and conditions\n- Issue breakdown by type and severity\n- Coverage and duplication metrics\n- Security vulnerabilities and hotspots\n- Trend analysis\n- Recommendations for improvement"
+    },
+    {
+      "name": "security_review",
+      "description": "Security-focused analysis",
+      "template": "Perform security review for {{projectKey}}:\n- Vulnerabilities by severity\n- Security hotspots needing review\n- OWASP Top 10 coverage\n- Security rating explanation\n- Prioritized remediation list"
+    },
+    {
+      "name": "pr_quality_check",
+      "description": "Check quality for a pull request",
+      "template": "Analyze PR quality for {{projectKey}} PR {{pullRequest}}:\n- New issues introduced\n- Coverage on new code\n- Quality gate status\n- Comparison with target branch\n- Recommended fixes before merge"
+    },
+    {
+      "name": "file_quality",
+      "description": "Detailed analysis of a specific file",
+      "template": "Analyze quality issues in file {{fileKey}}:\n- All issues with explanations\n- Code duplication\n- Complexity metrics\n- Suggested refactoring"
+    }
+  ],
+
+  "configuration": {
+    "caching": {
+      "enabled": true,
+      "ttl": 600,
+      "maxSize": "50MB"
+    },
+    "rateLimiting": {
+      "requestsPerMinute": 60,
+      "burstLimit": 20
+    },
+    "permissions": {
+      "projects": {
+        "browse": true,
+        "administer": false
+      },
+      "issues": {
+        "read": true,
+        "transition": false
+      }
+    }
+  },
+
+  "useCases": {
+    "codeReview": {
+      "description": "Get quality context for code review",
+      "workflow": [
+        "1. Get PR analysis with sonar_get_pr_analysis",
+        "2. List new issues with sonar_search_issues",
+        "3. Get security hotspots with sonar_get_security_hotspots",
+        "4. Check coverage on new code"
+      ]
+    },
+    "qualityAssessment": {
+      "description": "Assess overall project quality",
+      "workflow": [
+        "1. Get quality gate status with sonar_get_project_status",
+        "2. Get all measures with sonar_get_measures",
+        "3. Get issue distribution with sonar_search_issues",
+        "4. Analyze trends with sonar_get_analysis_history"
+      ]
+    },
+    "securityReview": {
+      "description": "Security-focused code review",
+      "workflow": [
+        "1. Get vulnerabilities with sonar_search_issues (type=VULNERABILITY)",
+        "2. Get security hotspots with sonar_get_security_hotspots",
+        "3. Get detailed rule explanations for each finding",
+        "4. Prioritize by severity and exploitability"
+      ]
+    },
+    "fileAnalysis": {
+      "description": "Analyze a specific file",
+      "workflow": [
+        "1. Get file issues with sonar_search_issues (files filter)",
+        "2. Get duplications with sonar_get_duplications",
+        "3. Get source with annotations with sonar_get_source",
+        "4. Understand rules with sonar_get_rule"
+      ]
+    }
+  },
+
+  "qualityMetrics": {
+    "ratings": {
+      "A": { "range": "0-0%", "description": "No issues" },
+      "B": { "range": "0.1-5%", "description": "Minor issues" },
+      "C": { "range": "5.1-10%", "description": "Moderate issues" },
+      "D": { "range": "10.1-20%", "description": "Significant issues" },
+      "E": { "range": ">20%", "description": "Severe issues" }
+    },
+    "commonMetrics": {
+      "bugs": "Reliability issues that represent actual bugs",
+      "vulnerabilities": "Security issues that could be exploited",
+      "code_smells": "Maintainability issues",
+      "coverage": "Test coverage percentage",
+      "duplicated_lines_density": "Duplication percentage",
+      "ncloc": "Lines of code (non-comment)",
+      "reliability_rating": "Rating based on bugs",
+      "security_rating": "Rating based on vulnerabilities",
+      "sqale_rating": "Maintainability rating",
+      "security_hotspots": "Security-sensitive code needing review"
+    }
+  },
+
+  "setup": {
+    "requirements": [
+      "SonarQube instance (Cloud or Server)",
+      "User token with project browse permissions",
+      "Access to relevant projects"
+    ],
+    "environmentVariables": {
+      "SONARQUBE_URL": {
+        "description": "SonarQube server URL",
+        "example": "https://sonarqube.company.com",
+        "cloudExample": "https://sonarcloud.io"
+      },
+      "SONARQUBE_TOKEN": {
+        "description": "User or project analysis token",
+        "sensitive": true
+      },
+      "SONARQUBE_ORGANIZATION": {
+        "description": "Organization key (required for SonarCloud)",
+        "optional": true
+      }
+    },
+    "supportedVersions": {
+      "sonarqube": "8.9+ LTS",
+      "sonarcloud": "Current"
+    }
+  }
+}

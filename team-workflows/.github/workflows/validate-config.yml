@@ -1,0 +1,298 @@
+name: Validate Copilot Configuration
+
+on:
+  push:
+    paths:
+      - '.github/copilot-instructions.md'
+      - 'core/**'
+      - 'stacks/**'
+      - 'mcp-configs/**'
+      - 'memory-bank/schemas/**'
+  pull_request:
+    paths:
+      - '.github/copilot-instructions.md'
+      - 'core/**'
+      - 'stacks/**'
+      - 'mcp-configs/**'
+      - 'memory-bank/schemas/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  validate-structure:
+    name: Validate File Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          echo "Checking required configuration files..."
+
+          required_files=(
+            ".github/copilot-instructions.md"
+            "core/agents/architect.agent.md"
+            "core/agents/code-reviewer.agent.md"
+            "core/instructions/enterprise-standards.instructions.md"
+            "memory-bank/schemas/project-context.schema.json"
+          )
+
+          missing=0
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error file=$file::Required file missing: $file"
+              missing=$((missing + 1))
+            else
+              echo "✓ Found: $file"
+            fi
+          done
+
+          if [ $missing -gt 0 ]; then
+            echo "::error::$missing required files are missing"
+            exit 1
+          fi
+
+      - name: Check file naming conventions
+        run: |
+          echo "Checking file naming conventions..."
+
+          # Check agent files
+          for file in core/agents/*.md; do
+            if [[ ! "$file" =~ \.agent\.md$ ]]; then
+              echo "::warning file=$file::Agent file should end with .agent.md"
+            fi
+          done
+
+          # Check instruction files
+          for file in core/instructions/*.md; do
+            if [[ ! "$file" =~ \.instructions\.md$ ]]; then
+              echo "::warning file=$file::Instruction file should end with .instructions.md"
+            fi
+          done
+
+          # Check prompt files
+          for file in core/prompts/*.md; do
+            if [[ ! "$file" =~ \.prompt\.md$ ]]; then
+              echo "::warning file=$file::Prompt file should end with .prompt.md"
+            fi
+          done
+
+          # Check chat mode files
+          for file in core/chat-modes/*.md; do
+            if [[ ! "$file" =~ \.chatmode\.md$ ]]; then
+              echo "::warning file=$file::Chat mode file should end with .chatmode.md"
+            fi
+          done
+
+          echo "File naming convention check completed"
+
+  validate-schemas:
+    name: Validate JSON Schemas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+
+      - name: Validate schema syntax
+        run: |
+          echo "Validating JSON schema syntax..."
+
+          for schema in memory-bank/schemas/*.schema.json; do
+            echo "Checking: $schema"
+            if ! ajv compile -s "$schema" --spec=draft2020 2>/dev/null; then
+              echo "::error file=$schema::Invalid JSON schema syntax"
+              exit 1
+            fi
+          done
+
+          echo "All schemas are syntactically valid"
+
+      - name: Validate MCP config schemas
+        run: |
+          echo "Validating MCP configuration files..."
+
+          for config in mcp-configs/**/*.json; do
+            echo "Checking: $config"
+            if ! python3 -c "import json; json.load(open('$config'))" 2>/dev/null; then
+              echo "::error file=$config::Invalid JSON syntax"
+              exit 1
+            fi
+          done
+
+          echo "All MCP configs are valid JSON"
+
+  validate-markdown:
+    name: Validate Markdown Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+
+      - name: Lint markdown files
+        run: |
+          echo "Linting markdown files..."
+
+          # Create markdownlint config
+          cat > .markdownlint.json << 'EOF'
+          {
+            "default": true,
+            "MD013": false,
+            "MD033": false,
+            "MD041": false,
+            "MD024": { "siblings_only": true }
+          }
+          EOF
+
+          # Lint core files
+          markdownlint "core/**/*.md" --config .markdownlint.json || true
+
+          # Lint copilot instructions
+          markdownlint ".github/copilot-instructions.md" --config .markdownlint.json || true
+
+          echo "Markdown linting completed"
+
+      - name: Check for required sections in agents
+        run: |
+          echo "Checking agent file structure..."
+
+          for agent in core/agents/*.agent.md; do
+            echo "Checking: $agent"
+
+            # Check for Identity section
+            if ! grep -q "^## Identity" "$agent" && ! grep -q "^# .*Agent" "$agent"; then
+              echo "::warning file=$agent::Agent should have Identity or title section"
+            fi
+
+            # Check for some form of capabilities/responsibilities
+            if ! grep -qE "^## (Capabilities|Responsibilities|Core)" "$agent"; then
+              echo "::warning file=$agent::Agent should describe capabilities or responsibilities"
+            fi
+          done
+
+      - name: Check for required sections in instructions
+        run: |
+          echo "Checking instruction file structure..."
+
+          for instr in core/instructions/*.instructions.md; do
+            echo "Checking: $instr"
+
+            # Check for Purpose section
+            if ! grep -q "^## Purpose" "$instr"; then
+              echo "::warning file=$instr::Instruction file should have Purpose section"
+            fi
+          done
+
+  validate-copilot-instructions:
+    name: Validate Copilot Instructions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check instructions file size
+        run: |
+          file=".github/copilot-instructions.md"
+          if [ -f "$file" ]; then
+            size=$(wc -c < "$file")
+            lines=$(wc -l < "$file")
+
+            echo "Instructions file size: $size bytes, $lines lines"
+
+            # Warn if file is very large (may affect Copilot performance)
+            if [ $size -gt 50000 ]; then
+              echo "::warning file=$file::Instructions file is large ($size bytes). Consider splitting into separate instruction files."
+            fi
+
+            # Warn if file is very short (may be incomplete)
+            if [ $lines -lt 10 ]; then
+              echo "::warning file=$file::Instructions file seems short ($lines lines). Ensure it contains necessary guidance."
+            fi
+          fi
+
+      - name: Check for sensitive patterns
+        run: |
+          echo "Checking for potentially sensitive content..."
+
+          # Patterns that shouldn't be in instructions
+          patterns=(
+            "password"
+            "api[_-]?key"
+            "secret"
+            "token"
+            "private[_-]?key"
+            "BEGIN RSA"
+            "BEGIN OPENSSH"
+          )
+
+          for pattern in "${patterns[@]}"; do
+            if grep -riE "$pattern" .github/copilot-instructions.md core/ 2>/dev/null; then
+              echo "::warning::Found potentially sensitive pattern: $pattern"
+            fi
+          done
+
+          echo "Sensitive content check completed"
+
+  report:
+    name: Generate Validation Report
+    needs: [validate-structure, validate-schemas, validate-markdown, validate-copilot-instructions]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Configuration Validation Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Check job results
+          if [ "${{ needs.validate-structure.result }}" == "success" ]; then
+            echo "| File Structure | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| File Structure | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.validate-schemas.result }}" == "success" ]; then
+            echo "| JSON Schemas | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| JSON Schemas | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.validate-markdown.result }}" == "success" ]; then
+            echo "| Markdown Files | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Markdown Files | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.validate-copilot-instructions.result }}" == "success" ]; then
+            echo "| Copilot Instructions | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Copilot Instructions | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
