@@ -1,6 +1,6 @@
 {
   "name": "everything-github-copilot-enterprise",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Enterprise-grade GitHub Copilot configuration framework with Memory Bank for teams",
   "keywords": [
     "github-copilot",
