@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { MemoryBankExplorerProvider } from './providers/MemoryBankExplorerProvider';
 import { AgentsProvider } from './providers/AgentsProvider';
 import { DecisionsProvider } from './providers/DecisionsProvider';
+import { registerSlashCommandCompletionProvider } from './providers/SlashCommandCompletionProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
 import { getMemoryBankChatParticipant } from './chat';
@@ -43,10 +44,8 @@ export function activate(context: vscode.ExtensionContext): void {
     decisionsProvider
   );
 
-  // Register the Memory Bank Chat Participant (US-007)
-  const chatParticipant = getMemoryBankChatParticipant();
-  chatParticipant.register(context);
-  console.log('Memory Bank Chat Participant @memory-bank registered');
+  // Register slash command completion provider (US-008)
+  registerSlashCommandCompletionProvider(context, memoryBankService);
 
   // Watch for configuration changes
   context.subscriptions.push(
