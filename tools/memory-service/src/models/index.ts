@@ -321,21 +321,47 @@ export const SearchQuerySchema = z.object({
   types: z.array(ContextEntryTypeSchema).optional(),
   tags: z.array(z.string()).optional(),
   moduleId: UUIDSchema.optional(),
+  status: z.array(ContextEntryStatusSchema).optional(),
+  createdBy: UUIDSchema.optional(),
+  createdAfter: z.coerce.date().optional(),
+  createdBefore: z.coerce.date().optional(),
+  updatedAfter: z.coerce.date().optional(),
+  updatedBefore: z.coerce.date().optional(),
   limit: z.number().int().min(1).max(100).default(10),
   offset: z.number().int().min(0).default(0),
   semantic: z.boolean().default(true),
   minSimilarity: z.number().min(0).max(1).default(0.7),
+  includeHighlights: z.boolean().default(true),
 });
 
 export type SearchQuery = z.infer<typeof SearchQuerySchema>;
 
+export const SearchHighlightSchema = z.object({
+  field: z.enum(['title', 'content']),
+  text: z.string(),
+  matchedTerms: z.array(z.string()).default([]),
+});
+
+export type SearchHighlight = z.infer<typeof SearchHighlightSchema>;
+
 export const SearchResultSchema = z.object({
   entry: ContextEntrySchema,
   similarity: z.number().nullable(),
-  highlights: z.array(z.string()).default([]),
+  highlights: z.array(SearchHighlightSchema).default([]),
 });
 
 export type SearchResult = z.infer<typeof SearchResultSchema>;
+
+export const SearchResponseSchema = z.object({
+  results: z.array(SearchResultSchema),
+  query: z.string(),
+  semantic: z.boolean(),
+  total: z.number(),
+  took: z.number(), // milliseconds
+  cached: z.boolean().default(false),
+});
+
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 
 // ============================================
 // API Response Types

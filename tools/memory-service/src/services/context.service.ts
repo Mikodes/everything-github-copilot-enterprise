@@ -8,17 +8,21 @@ import {
   UpdateContextEntry,
   SearchQuery,
   SearchResult,
+  SearchResponse,
   ContextEntryTypeSchema,
 } from '../models/index.js';
 import { EmbeddingService } from './embedding.service.js';
+import { getSemanticSearchService, SemanticSearchService } from './semantic-search.service.js';
 
 const logger = createChildLogger('context-service');
 
 export class ContextService {
   private embeddingService: EmbeddingService;
+  private searchService: SemanticSearchService;
 
   constructor() {
     this.embeddingService = new EmbeddingService();
+    this.searchService = getSemanticSearchService();
   }
 
   async create(data: CreateContextEntry): Promise<ContextEntry> {
@@ -63,8 +67,9 @@ export class ContextService {
 
     const entry = this.mapRowToEntry(result.rows[0]);
 
-    // Invalidate cache
+    // Invalidate cache (including search cache)
     await this.invalidateCache(data.projectId);
+    await this.searchService.invalidateProjectCache(data.projectId);
 
     // Publish sync event
     await this.publishSyncEvent(data.projectId, id, 'create', entry);
@@ -151,8 +156,9 @@ export class ContextService {
 
       const entry = this.mapRowToEntry(result.rows[0]);
 
-      // Invalidate cache
+      // Invalidate cache (including search cache)
       await this.invalidateCache(current.projectId);
+      await this.searchService.invalidateProjectCache(current.projectId);
 
       // Publish sync event
       await this.publishSyncEvent(current.projectId, data.id, 'update', entry);
@@ -173,8 +179,9 @@ export class ContextService {
 
     await db.query('DELETE FROM context_entries WHERE id = $1', [id]);
 
-    // Invalidate cache
+    // Invalidate cache (including search cache)
     await this.invalidateCache(current.projectId);
+    await this.searchService.invalidateProjectCache(current.projectId);
 
     // Publish sync event
     await this.publishSyncEvent(current.projectId, id, 'delete', { id });
@@ -265,72 +272,33 @@ export class ContextService {
     };
   }
 
-  async search(query: SearchQuery): Promise<SearchResult[]> {
-    const db = getDatabase();
-
-    if (query.semantic) {
-      return this.semanticSearch(query);
-    }
-
-    // Text-based search with trigram similarity
-    const result = await db.query<ContextEntry & { similarity: number }>(
-      `SELECT *, similarity(title, $1) as similarity
-       FROM context_entries
-       WHERE project_id = $2
-         AND status = 'active'
-         AND (title ILIKE $3 OR content ILIKE $3)
-       ORDER BY similarity DESC, updated_at DESC
-       LIMIT $4 OFFSET $5`,
-      [
-        query.query,
-        query.projectId,
-        `%${query.query}%`,
-        query.limit,
-        query.offset,
-      ]
-    );
-
-    return result.rows.map((row) => ({
-      entry: this.mapRowToEntry(row),
-      similarity: row.similarity,
-      highlights: this.extractHighlights(row.content, query.query),
-    }));
+  /**
+   * Search context entries using semantic or text-based search
+   * Delegates to SemanticSearchService for optimized searching with caching
+   */
+  async search(query: SearchQuery): Promise<SearchResponse> {
+    return this.searchService.search(query);
   }
 
-  private async semanticSearch(query: SearchQuery): Promise<SearchResult[]> {
-    const db = getDatabase();
+  /**
+   * Get search suggestions based on partial query (autocomplete)
+   */
+  async getSearchSuggestions(
+    projectId: string,
+    partialQuery: string,
+    limit: number = 5
+  ): Promise<string[]> {
+    return this.searchService.getSuggestions(projectId, partialQuery, limit);
+  }
 
-    // Generate embedding for query
-    const queryEmbedding = await this.embeddingService.generateEmbedding(query.query);
-
-    if (!queryEmbedding) {
-      logger.warn('Failed to generate query embedding, falling back to text search');
-      return this.search({ ...query, semantic: false });
-    }
-
-    const result = await db.query<ContextEntry & { similarity: number }>(
-      `SELECT *, 1 - (embedding <=> $1::vector) as similarity
-       FROM context_entries
-       WHERE project_id = $2
-         AND status = 'active'
-         AND embedding IS NOT NULL
-         AND 1 - (embedding <=> $1::vector) >= $3
-       ORDER BY embedding <=> $1::vector
-       LIMIT $4 OFFSET $5`,
-      [
-        `[${queryEmbedding.join(',')}]`,
-        query.projectId,
-        query.minSimilarity,
-        query.limit,
-        query.offset,
-      ]
-    );
-
-    return result.rows.map((row) => ({
-      entry: this.mapRowToEntry(row),
-      similarity: row.similarity,
-      highlights: [],
-    }));
+  /**
+   * Get related entries based on semantic similarity
+   */
+  async getRelatedEntries(
+    entryId: string,
+    limit: number = 5
+  ): Promise<SearchResult[]> {
+    return this.searchService.getRelatedEntries(entryId, limit);
   }
 
   private mapRowToEntry(row: Record<string, unknown>): ContextEntry {
@@ -353,21 +321,6 @@ export class ContextService {
       createdAt: new Date(row['created_at'] as string),
       updatedAt: new Date(row['updated_at'] as string),
     };
-  }
-
-  private extractHighlights(content: string, query: string): string[] {
-    const lines = content.split('\n');
-    const queryLower = query.toLowerCase();
-    const highlights: string[] = [];
-
-    for (const line of lines) {
-      if (line.toLowerCase().includes(queryLower)) {
-        highlights.push(line.trim());
-        if (highlights.length >= 3) break;
-      }
-    }
-
-    return highlights;
   }
 
   private async invalidateCache(projectId: string): Promise<void> {

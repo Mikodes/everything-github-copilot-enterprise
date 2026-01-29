@@ -158,6 +158,38 @@ describe('Models', () => {
         expect(result.data.offset).toBe(0);
         expect(result.data.semantic).toBe(true);
         expect(result.data.minSimilarity).toBe(0.7);
+        expect(result.data.includeHighlights).toBe(true);
+      }
+    });
+
+    it('should validate search query with all filters', () => {
+      const query = {
+        query: 'architecture patterns',
+        projectId: '123e4567-e89b-12d3-a456-426614174000',
+        types: ['adr', 'pattern'],
+        tags: ['backend', 'security'],
+        status: ['active', 'draft'],
+        createdBy: '123e4567-e89b-12d3-a456-426614174001',
+        createdAfter: '2025-01-01',
+        createdBefore: '2025-12-31',
+        moduleId: '123e4567-e89b-12d3-a456-426614174002',
+        limit: 20,
+        offset: 5,
+        semantic: true,
+        minSimilarity: 0.8,
+        includeHighlights: false,
+      };
+
+      const result = SearchQuerySchema.safeParse(query);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.types).toEqual(['adr', 'pattern']);
+        expect(result.data.tags).toEqual(['backend', 'security']);
+        expect(result.data.status).toEqual(['active', 'draft']);
+        expect(result.data.createdBy).toBe('123e4567-e89b-12d3-a456-426614174001');
+        expect(result.data.createdAfter).toBeInstanceOf(Date);
+        expect(result.data.createdBefore).toBeInstanceOf(Date);
+        expect(result.data.includeHighlights).toBe(false);
       }
     });
   });
