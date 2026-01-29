@@ -3,6 +3,9 @@ import { z } from 'zod';
 // Re-export sync types
 export * from './sync.js';
 
+// Re-export knowledge graph types
+export * from './knowledge-graph.js';
+
 // ============================================
 // Base Types
 // ============================================

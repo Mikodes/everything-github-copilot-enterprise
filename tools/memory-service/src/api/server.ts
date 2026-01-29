@@ -12,9 +12,11 @@ import { contextRoutes } from './routes/context.routes.js';
 import { syncRoutes } from './routes/sync.routes.js';
 import { cacheRoutes } from './routes/cache.routes.js';
 import { autoDetectRoutes } from './routes/auto-detect.routes.js';
+import { knowledgeGraphRoutes } from './routes/knowledge-graph.routes.js';
 import { getWebSocketSyncService } from '../services/websocket-sync.service.js';
 import { getPredictiveLoaderService } from '../services/predictive-loader.service.js';
 import { getAutoContextDetectionService } from '../services/auto-context-detection.service.js';
+import { getKnowledgeGraphService } from '../services/knowledge-graph.service.js';
 
 export async function createServer(): Promise<FastifyInstance> {
   const server = Fastify({
@@ -78,6 +80,7 @@ export async function createServer(): Promise<FastifyInstance> {
         { name: 'Search', description: 'Semantic and text search' },
         { name: 'Cache', description: 'Cache metrics and management' },
         { name: 'Auto-Detection', description: 'Automatic context detection (US-005)' },
+        { name: 'Knowledge Graph', description: 'Knowledge graph for entity relationships (US-006)' },
         { name: 'Projects', description: 'Project management' },
         { name: 'Auth', description: 'Authentication and authorization' },
       ],
@@ -140,6 +143,7 @@ export async function createServer(): Promise<FastifyInstance> {
   await server.register(syncRoutes, { prefix: '/api/v1' });
   await server.register(cacheRoutes, { prefix: '/api/v1' });
   await server.register(autoDetectRoutes, { prefix: '/api/v1' });
+  await server.register(knowledgeGraphRoutes, { prefix: '/api/v1' });
 
   // Register WebSocket sync service
   const wsService = getWebSocketSyncService();
@@ -153,6 +157,10 @@ export async function createServer(): Promise<FastifyInstance> {
   // Initialize auto-context detection service (US-005)
   const autoContextService = getAutoContextDetectionService();
   logger.info({ stats: autoContextService.getStats() }, 'Auto-context detection service initialized');
+
+  // Initialize knowledge graph service (US-006)
+  const knowledgeGraphService = getKnowledgeGraphService();
+  logger.info({ stats: knowledgeGraphService.getServiceStats() }, 'Knowledge graph service initialized');
 
   // Add more route registrations here as we build out the API
   // await server.register(projectRoutes, { prefix: '/api/v1' });
