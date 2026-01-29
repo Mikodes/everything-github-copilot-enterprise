@@ -2,6 +2,7 @@ import { createServer, startServer } from './api/server.js';
 import { getDatabase, closeDatabase } from './database/client.js';
 import { getCache, closeCache } from './cache/client.js';
 import { logger } from './utils/logger.js';
+import { getWebSocketSyncService } from './services/websocket-sync.service.js';
 
 async function main(): Promise<void> {
   logger.info('Starting EGCE Memory Service...');
@@ -24,6 +25,11 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Received shutdown signal');
 
     try {
+      // Shutdown WebSocket service first
+      const wsService = getWebSocketSyncService();
+      await wsService.shutdown();
+      logger.info('WebSocket sync service closed');
+
       // Close HTTP server
       await server.close();
       logger.info('HTTP server closed');

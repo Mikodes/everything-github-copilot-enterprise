@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Re-export sync types
+export * from './sync.js';
+
 // ============================================
 // Base Types
 // ============================================

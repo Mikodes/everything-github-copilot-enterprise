@@ -39,6 +39,14 @@ const envSchema = z.object({
   // Sync
   SYNC_ENABLED: z.coerce.boolean().default(true),
   SYNC_DEBOUNCE_MS: z.coerce.number().default(500),
+
+  // WebSocket
+  WS_HEARTBEAT_INTERVAL_MS: z.coerce.number().default(30000),
+  WS_HEARTBEAT_TIMEOUT_MS: z.coerce.number().default(60000),
+  WS_MAX_RECONNECT_ATTEMPTS: z.coerce.number().default(5),
+  WS_EVENT_RETENTION_DAYS: z.coerce.number().default(7),
+  WS_MAX_EVENT_BATCH_SIZE: z.coerce.number().default(100),
+  WS_CONFLICT_RESOLUTION: z.enum(['last_write_wins', 'first_write_wins', 'manual', 'merge']).default('last_write_wins'),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
