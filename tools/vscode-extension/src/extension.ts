@@ -4,6 +4,7 @@ import { AgentsProvider } from './providers/AgentsProvider';
 import { DecisionsProvider } from './providers/DecisionsProvider';
 import { registerSlashCommandCompletionProvider } from './providers/SlashCommandCompletionProvider';
 import { registerContextualHoverProvider } from './providers/ContextualHoverProvider';
+import { registerAdrBadgeDecorationProvider } from './providers/AdrBadgeDecorationProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
 
@@ -50,6 +51,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Register contextual hover provider (US-010)
   registerContextualHoverProvider(context, memoryBankService);
 
+  // Register ADR badge decoration provider (US-011)
+  const adrBadgeProvider = registerAdrBadgeDecorationProvider(context, memoryBankService);
+
   // Watch for configuration changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -77,14 +81,17 @@ export function activate(context: vscode.ExtensionContext): void {
     watcher.onDidChange(() => {
       memoryBankExplorerProvider.refresh();
       decisionsProvider.refresh();
+      adrBadgeProvider.refreshAllDecorations();
     }),
     watcher.onDidCreate(() => {
       memoryBankExplorerProvider.refresh();
       decisionsProvider.refresh();
+      adrBadgeProvider.refreshAllDecorations();
     }),
     watcher.onDidDelete(() => {
       memoryBankExplorerProvider.refresh();
       decisionsProvider.refresh();
+      adrBadgeProvider.refreshAllDecorations();
     }),
     watcher
   );

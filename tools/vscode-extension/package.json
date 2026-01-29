@@ -86,6 +86,30 @@
         "title": "Clear Hover Cache",
         "category": "EGCE",
         "icon": "$(trash)"
+      },
+      {
+        "command": "egce.toggleAdrBadges",
+        "title": "Toggle ADR Badges",
+        "category": "EGCE",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "egce.refreshAdrBadges",
+        "title": "Refresh ADR Badges",
+        "category": "EGCE",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "egce.navigateToAdrAtLine",
+        "title": "Navigate to Related ADR",
+        "category": "EGCE",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "egce.openAdrFromBadge",
+        "title": "Open ADR",
+        "category": "EGCE",
+        "icon": "$(file)"
       }
     ],
     "viewsContainers": {
@@ -166,6 +190,15 @@
         },
         {
           "command": "egce.clearHoverCache"
+        },
+        {
+          "command": "egce.toggleAdrBadges"
+        },
+        {
+          "command": "egce.refreshAdrBadges"
+        },
+        {
+          "command": "egce.navigateToAdrAtLine"
         }
       ]
     },
@@ -225,6 +258,31 @@
           "minimum": 30,
           "maximum": 600,
           "description": "Cache timeout for hover results in seconds"
+        },
+        "egce.adrBadges.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable ADR badges in the editor gutter showing related Architecture Decision Records"
+        },
+        "egce.adrBadges.showProposed": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show badges for proposed (pending) ADRs"
+        },
+        "egce.adrBadges.showAccepted": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show badges for accepted ADRs"
+        },
+        "egce.adrBadges.showDeprecated": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show badges for deprecated ADRs"
+        },
+        "egce.adrBadges.showSuperseded": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show badges for superseded ADRs"
         }
       }
     }

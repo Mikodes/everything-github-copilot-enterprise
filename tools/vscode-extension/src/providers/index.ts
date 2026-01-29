@@ -9,3 +9,7 @@ export {
   ContextualHoverProvider,
   registerContextualHoverProvider,
 } from './ContextualHoverProvider';
+export {
+  AdrBadgeDecorationProvider,
+  registerAdrBadgeDecorationProvider,
+} from './AdrBadgeDecorationProvider';
