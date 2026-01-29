@@ -5,3 +5,7 @@ export {
   SlashCommandCompletionProvider,
   registerSlashCommandCompletionProvider,
 } from './SlashCommandCompletionProvider';
+export {
+  ContextualHoverProvider,
+  registerContextualHoverProvider,
+} from './ContextualHoverProvider';
