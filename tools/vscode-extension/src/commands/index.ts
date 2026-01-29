@@ -3,13 +3,22 @@ import { MemoryBankService } from '../services/MemoryBankService';
 import { MemoryBankExplorerProvider } from '../providers/MemoryBankExplorerProvider';
 import { AgentsProvider } from '../providers/AgentsProvider';
 import { DecisionsProvider } from '../providers/DecisionsProvider';
+import { CollaborationService, getCollaborationService } from '../services/CollaborationService';
+import { CursorDecorationProvider } from '../providers/CursorDecorationProvider';
+import { PresenceProvider } from '../providers/PresenceProvider';
+import { CollaborationChatProvider, CollaborationChatPanel, showQuickChatInput } from '../providers/CollaborationChatProvider';
+import { Collaborator } from '../models/collaboration';
 
 export function registerCommands(
   context: vscode.ExtensionContext,
   memoryBankService: MemoryBankService,
   memoryBankExplorerProvider: MemoryBankExplorerProvider,
   agentsProvider: AgentsProvider,
-  decisionsProvider: DecisionsProvider
+  decisionsProvider: DecisionsProvider,
+  collaborationService?: CollaborationService,
+  cursorProvider?: CursorDecorationProvider,
+  presenceProvider?: PresenceProvider,
+  chatProvider?: CollaborationChatProvider
 ): void {
   // Init Project Command
   context.subscriptions.push(
@@ -449,6 +458,166 @@ export function registerCommands(
         vscode.window.showInformationMessage(`Created: ${name}`);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to create file: ${error}`);
+      }
+    })
+  );
+
+  // ============================================
+  // US-012: Real-time Collaboration Commands
+  // ============================================
+
+  // Start Collaboration Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.startCollaboration', async () => {
+      const service = collaborationService ?? getCollaborationService();
+      try {
+        await service.connect();
+        vscode.window.showInformationMessage('Connected to collaboration server');
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to connect: ${error}`);
+      }
+    })
+  );
+
+  // Stop Collaboration Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.stopCollaboration', () => {
+      const service = collaborationService ?? getCollaborationService();
+      service.disconnect();
+      vscode.window.showInformationMessage('Disconnected from collaboration server');
+    })
+  );
+
+  // Show Collaborators Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.showCollaborators', async () => {
+      const service = collaborationService ?? getCollaborationService();
+      const collaborators = service.getCollaborators();
+
+      if (collaborators.length === 0) {
+        vscode.window.showInformationMessage('No collaborators online');
+        return;
+      }
+
+      const items = collaborators.map((c) => ({
+        label: `$(person) ${c.user.name}`,
+        description: c.status,
+        detail: c.currentFile ? `Viewing: ${c.currentFile.split('/').pop()}` : 'No file open',
+        collaborator: c,
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: `${collaborators.length} collaborator(s) online`,
+      });
+
+      if (selected?.collaborator.currentFile && selected.collaborator.cursorPosition) {
+        // Go to their cursor
+        await vscode.commands.executeCommand(
+          'egce.goToCollaboratorCursor',
+          selected.collaborator
+        );
+      }
+    })
+  );
+
+  // Go to Collaborator Cursor Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'egce.goToCollaboratorCursor',
+      async (collaborator: Collaborator) => {
+        if (!collaborator.currentFile) {
+          vscode.window.showWarningMessage('Collaborator has no file open');
+          return;
+        }
+
+        try {
+          const doc = await vscode.workspace.openTextDocument(collaborator.currentFile);
+          const editor = await vscode.window.showTextDocument(doc);
+
+          if (collaborator.cursorPosition) {
+            const position = new vscode.Position(
+              collaborator.cursorPosition.line,
+              collaborator.cursorPosition.column
+            );
+            editor.selection = new vscode.Selection(position, position);
+            editor.revealRange(
+              new vscode.Range(position, position),
+              vscode.TextEditorRevealType.InCenter
+            );
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to navigate: ${error}`);
+        }
+      }
+    )
+  );
+
+  // Toggle Cursor Visibility Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.toggleCollaboratorCursors', () => {
+      if (cursorProvider) {
+        cursorProvider.toggle();
+        const enabled = cursorProvider.isEnabled();
+        vscode.window.showInformationMessage(
+          `Collaborator cursors ${enabled ? 'enabled' : 'disabled'}`
+        );
+      }
+    })
+  );
+
+  // Refresh Collaborators Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.refreshCollaborators', () => {
+      if (presenceProvider) {
+        presenceProvider.refresh();
+      }
+      if (chatProvider) {
+        chatProvider.refresh();
+      }
+    })
+  );
+
+  // Open Chat Panel Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.openChatPanel', () => {
+      CollaborationChatPanel.createOrShow(context.extensionUri);
+    })
+  );
+
+  // Quick Chat Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.quickChat', async () => {
+      await showQuickChatInput();
+    })
+  );
+
+  // Send Chat Message Command (for programmatic use)
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'egce.sendChatMessage',
+      async (message: string, contextFile?: string, contextLine?: number) => {
+        const service = collaborationService ?? getCollaborationService();
+        service.sendChatMessage(message, contextFile, contextLine);
+      }
+    )
+  );
+
+  // Toggle Collaboration Command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.toggleCollaboration', async () => {
+      const service = collaborationService ?? getCollaborationService();
+      const state = service.getConnectionState();
+
+      if (state === 'connected') {
+        service.disconnect();
+        vscode.window.showInformationMessage('Collaboration disabled');
+      } else {
+        try {
+          await service.connect();
+          vscode.window.showInformationMessage('Collaboration enabled');
+        } catch (error) {
+          vscode.window.showErrorMessage(`Failed to connect: ${error}`);
+        }
       }
     })
   );

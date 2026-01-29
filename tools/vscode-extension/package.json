@@ -142,6 +142,60 @@
         "title": "Open ADR",
         "category": "EGCE",
         "icon": "$(file)"
+      },
+      {
+        "command": "egce.startCollaboration",
+        "title": "Start Collaboration",
+        "category": "EGCE",
+        "icon": "$(broadcast)"
+      },
+      {
+        "command": "egce.stopCollaboration",
+        "title": "Stop Collaboration",
+        "category": "EGCE",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "egce.showCollaborators",
+        "title": "Show Collaborators",
+        "category": "EGCE",
+        "icon": "$(organization)"
+      },
+      {
+        "command": "egce.goToCollaboratorCursor",
+        "title": "Go to Collaborator Cursor",
+        "category": "EGCE",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "egce.toggleCollaboratorCursors",
+        "title": "Toggle Collaborator Cursors",
+        "category": "EGCE",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "egce.refreshCollaborators",
+        "title": "Refresh Collaborators",
+        "category": "EGCE",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "egce.openChatPanel",
+        "title": "Open Team Chat",
+        "category": "EGCE",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "egce.quickChat",
+        "title": "Quick Chat",
+        "category": "EGCE",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "egce.toggleCollaboration",
+        "title": "Toggle Collaboration",
+        "category": "EGCE",
+        "icon": "$(broadcast)"
       }
     ],
     "viewsContainers": {
@@ -172,6 +226,18 @@
           "name": "Decisions (ADRs)",
           "icon": "$(lightbulb)",
           "contextualTitle": "Architecture Decision Records"
+        },
+        {
+          "id": "memoryBankCollaborators",
+          "name": "Collaborators",
+          "icon": "$(organization)",
+          "contextualTitle": "Team Collaborators"
+        },
+        {
+          "id": "memoryBankChat",
+          "name": "Team Chat",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Quick Team Chat"
         }
       ]
     },
@@ -179,6 +245,14 @@
       {
         "view": "memoryBankExplorer",
         "contents": "No Memory Bank found in this workspace.\n[Initialize Memory Bank](command:egce.initProject)"
+      },
+      {
+        "view": "memoryBankCollaborators",
+        "contents": "Connect to see team collaborators.\n[Start Collaboration](command:egce.startCollaboration)"
+      },
+      {
+        "view": "memoryBankChat",
+        "contents": "Connect to start chatting with your team.\n[Start Collaboration](command:egce.startCollaboration)"
       }
     ],
     "menus": {
@@ -191,6 +265,26 @@
         {
           "command": "egce.createContextFile",
           "when": "view == memoryBankExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "egce.refreshCollaborators",
+          "when": "view == memoryBankCollaborators",
+          "group": "navigation"
+        },
+        {
+          "command": "egce.toggleCollaboratorCursors",
+          "when": "view == memoryBankCollaborators",
+          "group": "navigation"
+        },
+        {
+          "command": "egce.openChatPanel",
+          "when": "view == memoryBankChat",
+          "group": "navigation"
+        },
+        {
+          "command": "egce.quickChat",
+          "when": "view == memoryBankChat",
           "group": "navigation"
         }
       ],
@@ -231,6 +325,27 @@
         },
         {
           "command": "egce.navigateToAdrAtLine"
+        },
+        {
+          "command": "egce.startCollaboration"
+        },
+        {
+          "command": "egce.stopCollaboration"
+        },
+        {
+          "command": "egce.showCollaborators"
+        },
+        {
+          "command": "egce.toggleCollaboratorCursors"
+        },
+        {
+          "command": "egce.openChatPanel"
+        },
+        {
+          "command": "egce.quickChat"
+        },
+        {
+          "command": "egce.toggleCollaboration"
         }
       ]
     },
@@ -315,6 +430,64 @@
           "type": "boolean",
           "default": true,
           "description": "Show badges for superseded ADRs"
+        },
+        "egce.collaboration.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time collaboration features"
+        },
+        "egce.collaboration.autoConnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically connect to collaboration server on startup"
+        },
+        "egce.collaboration.showPresence": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show presence indicators for team members"
+        },
+        "egce.collaboration.showCursors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show other users' cursor positions in the editor"
+        },
+        "egce.collaboration.showSelections": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show other users' text selections in the editor"
+        },
+        "egce.collaboration.enableChat": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable contextual quick chat with team members"
+        },
+        "egce.collaboration.cursorUpdateDebounceMs": {
+          "type": "number",
+          "default": 100,
+          "minimum": 50,
+          "maximum": 500,
+          "description": "Debounce time in milliseconds for cursor position updates"
+        },
+        "egce.collaboration.presenceUpdateIntervalMs": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 10000,
+          "maximum": 120000,
+          "description": "Interval in milliseconds for presence updates"
+        },
+        "egce.collaboration.reconnectAttempts": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Number of reconnection attempts after connection loss"
+        },
+        "egce.collaboration.reconnectBackoffMs": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 500,
+          "maximum": 5000,
+          "description": "Base backoff time in milliseconds between reconnection attempts"
         }
       }
     }
