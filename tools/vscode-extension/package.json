@@ -23,7 +23,8 @@
   "activationEvents": [
     "workspaceContains:.memory-bank",
     "onView:memoryBankExplorer",
-    "onChatParticipant:egce.memory-bank"
+    "onChatParticipant:egce.memory-bank",
+    "onChatParticipant:egce.egce"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -54,6 +55,39 @@
           {
             "name": "help",
             "description": "Show Memory Bank help and available commands"
+          }
+        ]
+      },
+      {
+        "id": "egce.egce",
+        "fullName": "EGCE Assistant",
+        "name": "egce",
+        "description": "Enterprise GitHub Copilot Enhancement - Intelligent assistant with complete Memory Bank knowledge, team standards enforcement, and specialized agent access.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "architect",
+            "description": "Architecture mode - system design, ADRs, technical strategy"
+          },
+          {
+            "name": "dev",
+            "description": "Development mode - coding with patterns and standards"
+          },
+          {
+            "name": "review",
+            "description": "Review mode - code review with standards enforcement"
+          },
+          {
+            "name": "context",
+            "description": "Show loaded Memory Bank context"
+          },
+          {
+            "name": "standards",
+            "description": "Show team standards and conventions"
+          },
+          {
+            "name": "help",
+            "description": "Show EGCE help and available commands"
           }
         ]
       }
@@ -488,6 +522,50 @@
           "minimum": 500,
           "maximum": 5000,
           "description": "Base backoff time in milliseconds between reconnection attempts"
+        },
+        "egce.egce.defaultMode": {
+          "type": "string",
+          "enum": [
+            "architect",
+            "dev",
+            "review"
+          ],
+          "default": "dev",
+          "description": "Default operating mode for @egce chat participant"
+        },
+        "egce.egce.autoLoadContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically load Memory Bank context when starting a conversation"
+        },
+        "egce.egce.enforceStandards": {
+          "type": "boolean",
+          "default": true,
+          "description": "Apply team standards in code suggestions and reviews"
+        },
+        "egce.egce.maxContextFiles": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 50,
+          "description": "Maximum number of context files to load from Memory Bank"
+        },
+        "egce.egce.enabledAgents": {
+          "type": "array",
+          "default": [
+            "architect",
+            "code-reviewer",
+            "security-auditor",
+            "onboarding-guide",
+            "knowledge-curator",
+            "tech-debt-tracker",
+            "performance-analyst",
+            "adr-writer"
+          ],
+          "description": "List of enabled agent IDs for @egce participant",
+          "items": {
+            "type": "string"
+          }
         }
       }
     }
