@@ -11,8 +11,10 @@ import { healthRoutes } from './routes/health.routes.js';
 import { contextRoutes } from './routes/context.routes.js';
 import { syncRoutes } from './routes/sync.routes.js';
 import { cacheRoutes } from './routes/cache.routes.js';
+import { autoDetectRoutes } from './routes/auto-detect.routes.js';
 import { getWebSocketSyncService } from '../services/websocket-sync.service.js';
 import { getPredictiveLoaderService } from '../services/predictive-loader.service.js';
+import { getAutoContextDetectionService } from '../services/auto-context-detection.service.js';
 
 export async function createServer(): Promise<FastifyInstance> {
   const server = Fastify({
@@ -75,6 +77,7 @@ export async function createServer(): Promise<FastifyInstance> {
         { name: 'Context', description: 'Context entry management' },
         { name: 'Search', description: 'Semantic and text search' },
         { name: 'Cache', description: 'Cache metrics and management' },
+        { name: 'Auto-Detection', description: 'Automatic context detection (US-005)' },
         { name: 'Projects', description: 'Project management' },
         { name: 'Auth', description: 'Authentication and authorization' },
       ],
@@ -136,6 +139,7 @@ export async function createServer(): Promise<FastifyInstance> {
   await server.register(contextRoutes, { prefix: '/api/v1' });
   await server.register(syncRoutes, { prefix: '/api/v1' });
   await server.register(cacheRoutes, { prefix: '/api/v1' });
+  await server.register(autoDetectRoutes, { prefix: '/api/v1' });
 
   // Register WebSocket sync service
   const wsService = getWebSocketSyncService();
@@ -145,6 +149,10 @@ export async function createServer(): Promise<FastifyInstance> {
   // Start predictive cache loader (US-004)
   const predictiveLoader = getPredictiveLoaderService();
   predictiveLoader.start();
+
+  // Initialize auto-context detection service (US-005)
+  const autoContextService = getAutoContextDetectionService();
+  logger.info({ stats: autoContextService.getStats() }, 'Auto-context detection service initialized');
 
   // Add more route registrations here as we build out the API
   // await server.register(projectRoutes, { prefix: '/api/v1' });
