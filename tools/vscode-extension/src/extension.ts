@@ -3,6 +3,7 @@ import { MemoryBankExplorerProvider } from './providers/MemoryBankExplorerProvid
 import { AgentsProvider } from './providers/AgentsProvider';
 import { DecisionsProvider } from './providers/DecisionsProvider';
 import { registerSlashCommandCompletionProvider } from './providers/SlashCommandCompletionProvider';
+import { registerContextualHoverProvider } from './providers/ContextualHoverProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
 
@@ -45,6 +46,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register slash command completion provider (US-008)
   registerSlashCommandCompletionProvider(context, memoryBankService);
+
+  // Register contextual hover provider (US-010)
+  registerContextualHoverProvider(context, memoryBankService);
 
   // Watch for configuration changes
   context.subscriptions.push(
