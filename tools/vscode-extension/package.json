@@ -22,10 +22,42 @@
   ],
   "activationEvents": [
     "workspaceContains:.memory-bank",
-    "onView:memoryBankExplorer"
+    "onView:memoryBankExplorer",
+    "onChatParticipant:egce.memory-bank"
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "egce.memory-bank",
+        "fullName": "Memory Bank",
+        "name": "memory-bank",
+        "description": "Query your project's Memory Bank context directly from Copilot Chat. Search documentation, architecture decisions, patterns, and more.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "search",
+            "description": "Search the Memory Bank for relevant context"
+          },
+          {
+            "name": "context",
+            "description": "Detect and show current working context"
+          },
+          {
+            "name": "decisions",
+            "description": "Search architecture decisions (ADRs)"
+          },
+          {
+            "name": "patterns",
+            "description": "Find patterns and best practices"
+          },
+          {
+            "name": "help",
+            "description": "Show Memory Bank help and available commands"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "egce.initProject",

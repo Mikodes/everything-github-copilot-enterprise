@@ -6,6 +6,7 @@ import { registerSlashCommandCompletionProvider } from './providers/SlashCommand
 import { registerContextualHoverProvider } from './providers/ContextualHoverProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
+import { getMemoryBankChatParticipant } from './chat';
 
 let memoryBankService: MemoryBankService;
 
