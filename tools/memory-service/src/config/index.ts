@@ -47,6 +47,15 @@ const envSchema = z.object({
   WS_EVENT_RETENTION_DAYS: z.coerce.number().default(7),
   WS_MAX_EVENT_BATCH_SIZE: z.coerce.number().default(100),
   WS_CONFLICT_RESOLUTION: z.enum(['last_write_wins', 'first_write_wins', 'manual', 'merge']).default('last_write_wins'),
+
+  // US-004: Cache Configuration
+  CACHE_L1_MAX_SIZE: z.coerce.number().default(1000),
+  CACHE_L1_DEFAULT_TTL_MS: z.coerce.number().default(300000), // 5 minutes
+  CACHE_L1_CLEANUP_INTERVAL_MS: z.coerce.number().default(60000), // 1 minute
+  CACHE_PREDICTIVE_ENABLED: z.coerce.boolean().default(true),
+  CACHE_PREDICTIVE_INTERVAL_MS: z.coerce.number().default(60000), // 1 minute
+  CACHE_PREDICTIVE_MAX_ITEMS: z.coerce.number().default(50),
+  CACHE_PREDICTIVE_MIN_ACCESS_COUNT: z.coerce.number().default(3),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;

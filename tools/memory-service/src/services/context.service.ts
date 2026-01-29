@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase, withTransaction } from '../database/client.js';
 import { getCache } from '../cache/client.js';
+import { getContextMultiCache, MultiLevelCache } from '../cache/multi-level-cache.js';
+import { getCacheMetricsService, CacheMetricsService } from './cache-metrics.service.js';
+import { getPredictiveLoaderService, PredictiveLoaderService } from './predictive-loader.service.js';
 import { createChildLogger } from '../utils/logger.js';
 import {
   ContextEntry,
@@ -19,10 +22,16 @@ const logger = createChildLogger('context-service');
 export class ContextService {
   private embeddingService: EmbeddingService;
   private searchService: SemanticSearchService;
+  private multiLevelCache: MultiLevelCache;
+  private cacheMetrics: CacheMetricsService;
+  private predictiveLoader: PredictiveLoaderService;
 
   constructor() {
     this.embeddingService = new EmbeddingService();
     this.searchService = getSemanticSearchService();
+    this.multiLevelCache = getContextMultiCache();
+    this.cacheMetrics = getCacheMetricsService();
+    this.predictiveLoader = getPredictiveLoaderService();
   }
 
   async create(data: CreateContextEntry): Promise<ContextEntry> {
@@ -189,14 +198,20 @@ export class ContextService {
     logger.info({ id, userId }, 'Context entry deleted');
   }
 
-  async getById(id: string): Promise<ContextEntry | null> {
-    const cache = getCache();
+  async getById(id: string, userId?: string): Promise<ContextEntry | null> {
     const cacheKey = `context:${id}`;
 
-    // Try cache first
-    const cached = await cache.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached) as ContextEntry;
+    // Determine context type for TTL (we'll discover it after fetch if needed)
+    // Try multi-level cache first (L1 → L2)
+    const cached = await this.multiLevelCache.get<ContextEntry>(cacheKey);
+
+    if (cached.value !== null) {
+      // Record access for predictive loading
+      this.cacheMetrics.recordAccess(cacheKey, cached.value.type);
+      if (userId) {
+        this.predictiveLoader.updateUserContext(userId, id, cached.value.projectId, cached.value.moduleId ?? undefined);
+      }
+      return cached.value;
     }
 
     const db = getDatabase();
@@ -211,10 +226,31 @@ export class ContextService {
 
     const entry = this.mapRowToEntry(result.rows[0]);
 
-    // Cache for 5 minutes
-    await cache.set(cacheKey, JSON.stringify(entry), 300);
+    // Cache with type-specific TTL
+    const contextType = this.mapEntryTypeToTTLType(entry.type);
+    await this.multiLevelCache.set(cacheKey, entry, contextType);
+
+    // Record access for predictive loading
+    this.cacheMetrics.recordAccess(cacheKey, entry.type);
+    if (userId) {
+      this.predictiveLoader.updateUserContext(userId, id, entry.projectId, entry.moduleId ?? undefined);
+    }
 
     return entry;
+  }
+
+  /**
+   * Map entry type to TTL configuration type
+   */
+  private mapEntryTypeToTTLType(type: string): 'project_context' | 'module_context' | 'adr' | 'knowledge_entry' | 'session_context' {
+    const mapping: Record<string, 'project_context' | 'module_context' | 'adr' | 'knowledge_entry' | 'session_context'> = {
+      project_context: 'project_context',
+      module_context: 'module_context',
+      adr: 'adr',
+      knowledge_entry: 'knowledge_entry',
+      session_context: 'session_context',
+    };
+    return mapping[type] ?? 'knowledge_entry';
   }
 
   async getByProject(
@@ -324,12 +360,8 @@ export class ContextService {
   }
 
   private async invalidateCache(projectId: string): Promise<void> {
-    const cache = getCache();
-    const keys = await cache.keys(`context:*`);
-    for (const key of keys) {
-      await cache.del(key);
-    }
-    await cache.del(`project:${projectId}:entries`);
+    // Invalidate using multi-level cache (handles both L1 and L2)
+    await this.multiLevelCache.invalidateProject(projectId);
   }
 
   private async publishSyncEvent(
