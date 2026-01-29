@@ -106,6 +106,18 @@
         "title": "Create Context File",
         "category": "EGCE",
         "icon": "$(new-file)"
+      },
+      {
+        "command": "egce.toggleContextualHovers",
+        "title": "Toggle Contextual Hovers",
+        "category": "EGCE",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "egce.clearHoverCache",
+        "title": "Clear Hover Cache",
+        "category": "EGCE",
+        "icon": "$(trash)"
       }
     ],
     "viewsContainers": {
@@ -180,6 +192,12 @@
         },
         {
           "command": "egce.validateMemoryBank"
+        },
+        {
+          "command": "egce.toggleContextualHovers"
+        },
+        {
+          "command": "egce.clearHoverCache"
         }
       ]
     },
@@ -211,27 +229,34 @@
           "default": true,
           "description": "Show decorator icons in the Memory Bank tree view"
         },
-        "egce.memoryServiceUrl": {
-          "type": "string",
-          "default": "http://localhost:3000",
-          "description": "URL of the Memory Bank backend service"
-        },
-        "egce.apiTimeout": {
-          "type": "number",
-          "default": 10000,
-          "description": "Timeout in milliseconds for Memory Bank API calls"
-        },
-        "egce.chatParticipant.enabled": {
+        "egce.contextualHovers.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the @memory-bank chat participant"
+          "description": "Enable contextual hovers showing Memory Bank information when hovering over code symbols"
         },
-        "egce.chatParticipant.maxResults": {
+        "egce.contextualHovers.showPatterns": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show design pattern information in contextual hovers"
+        },
+        "egce.contextualHovers.showDecisions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show related Architecture Decision Records (ADRs) in contextual hovers"
+        },
+        "egce.contextualHovers.maxResults": {
           "type": "number",
-          "default": 5,
+          "default": 3,
           "minimum": 1,
-          "maximum": 20,
-          "description": "Maximum number of results to show in chat responses"
+          "maximum": 10,
+          "description": "Maximum number of context matches to show in hover tooltip"
+        },
+        "egce.contextualHovers.cacheTimeout": {
+          "type": "number",
+          "default": 180,
+          "minimum": 30,
+          "maximum": 600,
+          "description": "Cache timeout for hover results in seconds"
         }
       }
     }
