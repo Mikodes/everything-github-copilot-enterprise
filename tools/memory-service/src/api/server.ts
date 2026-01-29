@@ -9,6 +9,8 @@ import { config, isDevelopment } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { contextRoutes } from './routes/context.routes.js';
+import { syncRoutes } from './routes/sync.routes.js';
+import { getWebSocketSyncService } from '../services/websocket-sync.service.js';
 
 export async function createServer(): Promise<FastifyInstance> {
   const server = Fastify({
@@ -129,11 +131,16 @@ export async function createServer(): Promise<FastifyInstance> {
   // Register routes
   await server.register(healthRoutes);
   await server.register(contextRoutes, { prefix: '/api/v1' });
+  await server.register(syncRoutes, { prefix: '/api/v1' });
+
+  // Register WebSocket sync service
+  const wsService = getWebSocketSyncService();
+  await wsService.register(server);
+  wsService.startHeartbeat();
 
   // Add more route registrations here as we build out the API
   // await server.register(projectRoutes, { prefix: '/api/v1' });
   // await server.register(authRoutes, { prefix: '/api/v1' });
-  // await server.register(syncRoutes, { prefix: '/api/v1' });
 
   return server;
 }

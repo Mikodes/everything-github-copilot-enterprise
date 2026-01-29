@@ -24,35 +24,57 @@ Phase 1 implements the core Memory Bank backend service with distributed storage
 | T-034.1 | ✅ Complete | Permission model design |
 | T-034.2 | ✅ Complete | Authorization middleware |
 
+### US-002: Servicio de Sincronización en Tiempo Real (WebSocket)
+
+| Task | Status | Description |
+|------|--------|-------------|
+| T-002.1 | ✅ Complete | WebSocket server with @fastify/websocket |
+| T-002.2 | ✅ Complete | Sync protocol design (types/interfaces) |
+| T-002.3 | ✅ Complete | Conflict resolution strategy (last-write-wins) |
+| T-002.4 | ✅ Complete | Event queue with persistence (SyncEventService) |
+| T-002.5 | ✅ Complete | Offline mode support with reconnection sync |
+| T-002.6 | ✅ Complete | Tests for concurrency & race conditions |
+
+**Additional Features:**
+- Server-Sent Events (SSE) fallback for non-WebSocket clients
+- Redis Pub/Sub for multi-instance support
+- User presence tracking
+- Heartbeat monitoring
+
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Memory Service API                        │
-│                    (Fastify + TypeScript)                    │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Context   │  │    Auth     │  │     Migration       │  │
-│  │   Service   │  │   Service   │  │      Service        │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-│         │                │                     │             │
-│  ┌──────┴────────────────┴─────────────────────┴──────────┐ │
-│  │                    Database Layer                       │ │
-│  │              (PostgreSQL + pgvector)                    │ │
-│  └─────────────────────────┬───────────────────────────────┘ │
-│                            │                                 │
-│  ┌─────────────────────────┴───────────────────────────────┐ │
-│  │                     Cache Layer                          │ │
-│  │                       (Redis)                            │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │                  Embedding Service                        │ │
-│  │               (OpenAI text-embedding-3)                   │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Memory Service API                            │
+│                        (Fastify + TypeScript)                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌─────────────────┐  │
+│  │  Context  │  │   Auth    │  │ Migration │  │   WebSocket     │  │
+│  │  Service  │  │  Service  │  │  Service  │  │  Sync Service   │  │
+│  └─────┬─────┘  └─────┬─────┘  └─────┬─────┘  └───────┬─────────┘  │
+│        │              │              │                │             │
+│        │              │              │    ┌───────────┴──────────┐  │
+│        │              │              │    │   SyncEvent Service  │  │
+│        │              │              │    │  (Event Queue + CRDT)│  │
+│        │              │              │    └───────────┬──────────┘  │
+│        │              │              │                │             │
+│  ┌─────┴──────────────┴──────────────┴────────────────┴──────────┐ │
+│  │                      Database Layer                            │ │
+│  │                (PostgreSQL + pgvector)                         │ │
+│  └─────────────────────────────┬─────────────────────────────────┘ │
+│                                │                                    │
+│  ┌─────────────────────────────┴─────────────────────────────────┐ │
+│  │                       Cache Layer                              │ │
+│  │              (Redis + Pub/Sub for real-time sync)              │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │                    Embedding Service                            │ │
+│  │                 (OpenAI text-embedding-3)                       │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Database Schema
@@ -97,6 +119,18 @@ Phase 1 implements the core Memory Bank backend service with distributed storage
 | PUT | `/api/v1/context/:id` | Update entry |
 | DELETE | `/api/v1/context/:id` | Delete entry |
 | POST | `/api/v1/projects/:projectId/context/search` | Semantic search |
+
+### Real-time Sync
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| WS | `/ws/sync` | WebSocket endpoint for real-time sync |
+| GET | `/api/v1/sync/sse/:projectId` | SSE endpoint (WebSocket fallback) |
+| GET | `/api/v1/sync/events/:projectId` | Get sync events for project |
+| GET | `/api/v1/sync/sequence/:projectId` | Get current sequence number |
+| GET | `/api/v1/sync/stats/:projectId` | Get sync statistics |
+| GET | `/api/v1/sync/connections` | Get connection statistics |
+| POST | `/api/v1/sync/cleanup` | Trigger old event cleanup |
 
 ## Getting Started
 
@@ -197,7 +231,7 @@ npm run test:integration
 
 ### Phase 1 Remaining
 
-- [ ] WebSocket server for real-time sync (US-002)
+- [x] WebSocket server for real-time sync (US-002) ✅
 - [ ] Audit log API endpoints
 - [ ] Project and organization management endpoints
 - [ ] User authentication endpoints
@@ -216,7 +250,8 @@ tools/memory-service/
 │   ├── api/
 │   │   ├── routes/
 │   │   │   ├── context.routes.ts
-│   │   │   └── health.routes.ts
+│   │   │   ├── health.routes.ts
+│   │   │   └── sync.routes.ts          # NEW: SSE & REST sync endpoints
 │   │   └── server.ts
 │   ├── auth/
 │   │   └── middleware.ts
@@ -228,18 +263,24 @@ tools/memory-service/
 │   │   ├── client.ts
 │   │   └── init.sql
 │   ├── models/
-│   │   └── index.ts
+│   │   ├── index.ts
+│   │   └── sync.ts                      # NEW: Sync protocol types
 │   ├── services/
 │   │   ├── auth.service.ts
 │   │   ├── context.service.ts
 │   │   ├── embedding.service.ts
-│   │   └── migration.service.ts
+│   │   ├── migration.service.ts
+│   │   ├── sync-event.service.ts        # NEW: Event queue & persistence
+│   │   └── websocket-sync.service.ts    # NEW: WebSocket sync service
 │   ├── utils/
 │   │   └── logger.ts
 │   └── index.ts
 ├── tests/
 │   ├── unit/
-│   │   └── models.test.ts
+│   │   ├── models.test.ts
+│   │   ├── sync-models.test.ts          # NEW: Sync model tests
+│   │   ├── sync-event-service.test.ts   # NEW: Event service tests
+│   │   └── websocket-sync-service.test.ts # NEW: WebSocket tests
 │   └── setup.ts
 ├── docker-compose.yml
 ├── Dockerfile
