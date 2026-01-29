@@ -4,6 +4,7 @@ import { AgentsProvider } from './providers/AgentsProvider';
 import { DecisionsProvider } from './providers/DecisionsProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
+import { getMemoryBankChatParticipant } from './chat';
 
 let memoryBankService: MemoryBankService;
 
@@ -41,6 +42,11 @@ export function activate(context: vscode.ExtensionContext): void {
     agentsProvider,
     decisionsProvider
   );
+
+  // Register the Memory Bank Chat Participant (US-007)
+  const chatParticipant = getMemoryBankChatParticipant();
+  chatParticipant.register(context);
+  console.log('Memory Bank Chat Participant @memory-bank registered');
 
   // Watch for configuration changes
   context.subscriptions.push(
