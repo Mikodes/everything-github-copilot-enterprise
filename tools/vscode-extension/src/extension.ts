@@ -11,7 +11,7 @@ import { registerCollaborationChatProvider } from './providers/CollaborationChat
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
 import { getCollaborationService } from './services/CollaborationService';
-import { getMemoryBankChatParticipant } from './chat';
+import { getMemoryBankChatParticipant, getEgceChatParticipant } from './chat';
 
 let memoryBankService: MemoryBankService;
 
@@ -66,6 +66,23 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register collaboration chat provider (AC-012.3: Quick Chat)
   const chatProvider = registerCollaborationChatProvider(context);
+
+  // ============================================
+  // US-013: Custom Chat Participant @egce
+  // ============================================
+
+  // Register Memory Bank Chat Participant (US-007)
+  const memoryBankParticipant = getMemoryBankChatParticipant();
+  memoryBankParticipant.register(context);
+
+  // Register EGCE Chat Participant (US-013)
+  // AC-013.1: Responds with complete Memory Bank knowledge
+  // AC-013.2: Loads context from multiple files automatically
+  // AC-013.3: Applies team standards in code suggestions
+  // AC-013.4: Supports 3 operating modes (architect, dev, review)
+  // AC-013.5: Integrates with 8 core agents
+  const egceParticipant = getEgceChatParticipant();
+  egceParticipant.register(context);
 
   // Register all commands (including collaboration commands from US-012)
   registerCommands(
