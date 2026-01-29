@@ -13,10 +13,12 @@ import { syncRoutes } from './routes/sync.routes.js';
 import { cacheRoutes } from './routes/cache.routes.js';
 import { autoDetectRoutes } from './routes/auto-detect.routes.js';
 import { knowledgeGraphRoutes } from './routes/knowledge-graph.routes.js';
+import { slashCommandsRoutes } from './routes/slash-commands.routes.js';
 import { getWebSocketSyncService } from '../services/websocket-sync.service.js';
 import { getPredictiveLoaderService } from '../services/predictive-loader.service.js';
 import { getAutoContextDetectionService } from '../services/auto-context-detection.service.js';
 import { getKnowledgeGraphService } from '../services/knowledge-graph.service.js';
+import { initializeSlashCommandsService } from '../services/slash-commands.service.js';
 
 export async function createServer(): Promise<FastifyInstance> {
   const server = Fastify({
@@ -81,6 +83,7 @@ export async function createServer(): Promise<FastifyInstance> {
         { name: 'Cache', description: 'Cache metrics and management' },
         { name: 'Auto-Detection', description: 'Automatic context detection (US-005)' },
         { name: 'Knowledge Graph', description: 'Knowledge graph for entity relationships (US-006)' },
+        { name: 'Slash Commands', description: 'Custom slash commands for Memory Bank access (US-008)' },
         { name: 'Projects', description: 'Project management' },
         { name: 'Auth', description: 'Authentication and authorization' },
       ],
@@ -144,6 +147,7 @@ export async function createServer(): Promise<FastifyInstance> {
   await server.register(cacheRoutes, { prefix: '/api/v1' });
   await server.register(autoDetectRoutes, { prefix: '/api/v1' });
   await server.register(knowledgeGraphRoutes, { prefix: '/api/v1' });
+  await server.register(slashCommandsRoutes, { prefix: '/api/v1' });
 
   // Register WebSocket sync service
   const wsService = getWebSocketSyncService();
@@ -161,6 +165,10 @@ export async function createServer(): Promise<FastifyInstance> {
   // Initialize knowledge graph service (US-006)
   const knowledgeGraphService = getKnowledgeGraphService();
   logger.info({ stats: knowledgeGraphService.getServiceStats() }, 'Knowledge graph service initialized');
+
+  // Initialize slash commands service (US-008)
+  const slashCommandsService = await initializeSlashCommandsService();
+  logger.info({ stats: slashCommandsService.getStats() }, 'Slash commands service initialized');
 
   // Add more route registrations here as we build out the API
   // await server.register(projectRoutes, { prefix: '/api/v1' });
