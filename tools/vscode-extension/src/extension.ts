@@ -5,8 +5,12 @@ import { DecisionsProvider } from './providers/DecisionsProvider';
 import { registerSlashCommandCompletionProvider } from './providers/SlashCommandCompletionProvider';
 import { registerContextualHoverProvider } from './providers/ContextualHoverProvider';
 import { registerAdrBadgeDecorationProvider } from './providers/AdrBadgeDecorationProvider';
+import { registerPresenceProvider } from './providers/PresenceProvider';
+import { registerCursorDecorationProvider } from './providers/CursorDecorationProvider';
+import { registerCollaborationChatProvider } from './providers/CollaborationChatProvider';
 import { registerCommands } from './commands';
 import { MemoryBankService } from './services/MemoryBankService';
+import { getCollaborationService } from './services/CollaborationService';
 import { getMemoryBankChatParticipant } from './chat';
 
 let memoryBankService: MemoryBankService;
@@ -37,15 +41,6 @@ export function activate(context: vscode.ExtensionContext): void {
     )
   );
 
-  // Register all commands
-  registerCommands(
-    context,
-    memoryBankService,
-    memoryBankExplorerProvider,
-    agentsProvider,
-    decisionsProvider
-  );
-
   // Register slash command completion provider (US-008)
   registerSlashCommandCompletionProvider(context, memoryBankService);
 
@@ -54,6 +49,47 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register ADR badge decoration provider (US-011)
   const adrBadgeProvider = registerAdrBadgeDecorationProvider(context, memoryBankService);
+
+  // ============================================
+  // US-012: Real-time Collaboration
+  // ============================================
+
+  // Get collaboration service
+  const collaborationService = getCollaborationService();
+  context.subscriptions.push(collaborationService);
+
+  // Register presence provider (AC-012.1: User Presence)
+  const { treeProvider: presenceProvider, statusBarItem } = registerPresenceProvider(context);
+
+  // Register cursor decoration provider (AC-012.2: Cursor Tracking)
+  const cursorProvider = registerCursorDecorationProvider(context);
+
+  // Register collaboration chat provider (AC-012.3: Quick Chat)
+  const chatProvider = registerCollaborationChatProvider(context);
+
+  // Register all commands (including collaboration commands from US-012)
+  registerCommands(
+    context,
+    memoryBankService,
+    memoryBankExplorerProvider,
+    agentsProvider,
+    decisionsProvider,
+    collaborationService,
+    cursorProvider,
+    presenceProvider,
+    chatProvider
+  );
+
+  // Auto-connect to collaboration if enabled
+  const autoConnect = vscode.workspace
+    .getConfiguration('egce.collaboration')
+    .get<boolean>('autoConnect', false);
+
+  if (autoConnect) {
+    collaborationService.connect().catch((error) => {
+      console.warn('Failed to auto-connect to collaboration:', error);
+    });
+  }
 
   // Watch for configuration changes
   context.subscriptions.push(
