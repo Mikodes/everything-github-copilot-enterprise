@@ -12,7 +12,9 @@ import {
   CreateContextEntrySchema,
   UpdateContextEntrySchema,
   SearchQuerySchema,
+  SearchResponseSchema,
   ContextEntryTypeSchema,
+  ContextEntryStatusSchema,
 } from '../../models/index.js';
 
 // Query schemas
@@ -242,21 +244,39 @@ export async function contextRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
+  // Extended search body schema with all filters
+  const SearchBodySchema = SearchQuerySchema.omit({ projectId: true });
+
   /**
    * POST /projects/:projectId/context/search
-   * Search context entries
+   * Search context entries using semantic or text search
+   * Supports filters: types, tags, status, date range, author
    */
   fastify.post<{
     Params: z.infer<typeof ProjectParamSchema>;
-    Body: Omit<z.infer<typeof SearchQuerySchema>, 'projectId'>;
+    Body: z.infer<typeof SearchBodySchema>;
   }>(
     '/projects/:projectId/context/search',
     {
       preHandler: [authorize({ permissions: ['context:read'] })],
       schema: {
-        description: 'Search context entries using semantic or text search',
+        description: 'Search context entries using semantic or text search. Supports natural language queries in Spanish and English.',
         tags: ['Context', 'Search'],
         params: ProjectParamSchema,
+        body: SearchBodySchema,
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              results: { type: 'array' },
+              query: { type: 'string' },
+              semantic: { type: 'boolean' },
+              total: { type: 'number' },
+              took: { type: 'number', description: 'Search time in milliseconds' },
+              cached: { type: 'boolean' },
+            },
+          },
+        },
       },
     },
     async (request, reply) => {
@@ -264,15 +284,118 @@ export async function contextRoutes(fastify: FastifyInstance): Promise<void> {
       const body = request.body;
 
       const contextService = getContextService();
-      const results = await contextService.search({
+      const response = await contextService.search({
         ...body,
         projectId,
       });
 
+      return reply.send(response);
+    }
+  );
+
+  // Suggestions query schema
+  const SuggestionsQuerySchema = z.object({
+    q: z.string().min(2).max(100),
+    limit: z.coerce.number().int().min(1).max(20).default(5),
+  });
+
+  /**
+   * GET /projects/:projectId/context/suggestions
+   * Get search suggestions (autocomplete)
+   */
+  fastify.get<{
+    Params: z.infer<typeof ProjectParamSchema>;
+    Querystring: z.infer<typeof SuggestionsQuerySchema>;
+  }>(
+    '/projects/:projectId/context/suggestions',
+    {
+      preHandler: [authorize({ permissions: ['context:read'] })],
+      schema: {
+        description: 'Get search suggestions based on partial query (autocomplete)',
+        tags: ['Context', 'Search'],
+        params: ProjectParamSchema,
+        querystring: SuggestionsQuerySchema,
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              suggestions: { type: 'array', items: { type: 'string' } },
+              query: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { projectId } = request.params;
+      const { q: partialQuery, limit } = request.query;
+
+      const contextService = getContextService();
+      const suggestions = await contextService.getSearchSuggestions(
+        projectId,
+        partialQuery,
+        limit
+      );
+
       return reply.send({
-        results,
-        query: body.query,
-        semantic: body.semantic ?? true,
+        suggestions,
+        query: partialQuery,
+      });
+    }
+  );
+
+  // Related entries query schema
+  const RelatedQuerySchema = z.object({
+    limit: z.coerce.number().int().min(1).max(20).default(5),
+  });
+
+  /**
+   * GET /context/:id/related
+   * Get related context entries based on semantic similarity
+   */
+  fastify.get<{
+    Params: z.infer<typeof IdParamSchema>;
+    Querystring: z.infer<typeof RelatedQuerySchema>;
+  }>(
+    '/context/:id/related',
+    {
+      preHandler: [authorize({ permissions: ['context:read'] })],
+      schema: {
+        description: 'Get semantically related context entries',
+        tags: ['Context', 'Search'],
+        params: IdParamSchema,
+        querystring: RelatedQuerySchema,
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              related: { type: 'array' },
+              entryId: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { limit } = request.query;
+
+      const contextService = getContextService();
+
+      // Verify entry exists
+      const entry = await contextService.getById(id);
+      if (!entry) {
+        return reply.code(404).send({
+          code: 'NOT_FOUND',
+          message: `Context entry not found: ${id}`,
+        });
+      }
+
+      const related = await contextService.getRelatedEntries(id, limit);
+
+      return reply.send({
+        related,
+        entryId: id,
       });
     }
   );
