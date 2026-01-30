@@ -18,6 +18,7 @@ import {
   getTemplateProvider,
   getAdrDraftGenerator,
 } from './agent';
+import { getPrContextGenerator } from './pr';
 
 let memoryBankService: MemoryBankService;
 
@@ -264,6 +265,312 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   console.log('US-014: Agent Mode integration registered');
+
+  // ============================================
+  // US-015: Generación de Contexto para PRs
+  // ============================================
+
+  // Initialize PR Context Generator
+  // AC-015.1: Generates PR description based on commits and context
+  // AC-015.2: Includes related ADRs with the changes
+  // AC-015.3: Lists patterns used or modified
+  // AC-015.4: Suggests reviewers based on module ownership
+  // AC-015.5: Detects potential breaking changes
+  const prContextGenerator = getPrContextGenerator();
+  context.subscriptions.push(prContextGenerator);
+
+  // Register PR Context commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('egce.generatePrContext', async () => {
+      // Get git information using VS Code's built-in Git API
+      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      if (!gitExtension) {
+        vscode.window.showErrorMessage('Git extension not found');
+        return;
+      }
+
+      const git = gitExtension.exports.getAPI(1);
+      const repo = git.repositories[0];
+
+      if (!repo) {
+        vscode.window.showErrorMessage('No Git repository found');
+        return;
+      }
+
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Generating PR Context',
+          cancellable: false,
+        },
+        async (progress) => {
+          try {
+            progress.report({ message: 'Analyzing commits...' });
+
+            // Get current branch and base branch
+            const currentBranch = repo.state.HEAD?.name || 'HEAD';
+            const baseBranch = await vscode.window.showInputBox({
+              prompt: 'Enter base branch',
+              value: 'main',
+              placeHolder: 'main, master, develop...',
+            });
+
+            if (!baseBranch) return;
+
+            // Get commits between base and head
+            const logResult = await repo.log({
+              range: `${baseBranch}..${currentBranch}`,
+              maxEntries: 50,
+            });
+
+            const commits = logResult.map((c: {
+              hash: string;
+              message: string;
+              authorName?: string;
+              authorEmail?: string;
+              commitDate?: Date;
+            }) => ({
+              hash: c.hash,
+              shortHash: c.hash.substring(0, 7),
+              message: c.message.split('\n')[0],
+              body: c.message.split('\n').slice(1).join('\n'),
+              author: c.authorName || 'Unknown',
+              authorEmail: c.authorEmail || '',
+              date: c.commitDate || new Date(),
+              files: [],
+            }));
+
+            progress.report({ message: 'Analyzing file changes...' });
+
+            // Get diff between branches
+            const diffResult = await repo.diffBetween(baseBranch, currentBranch);
+            const fileChanges = diffResult.map((d: {
+              uri: vscode.Uri;
+              status: number;
+              originalUri?: vscode.Uri;
+            }) => ({
+              path: vscode.workspace.asRelativePath(d.uri),
+              status: d.status === 1 ? 'added' : d.status === 2 ? 'modified' : d.status === 3 ? 'deleted' : 'modified',
+              additions: 0,
+              deletions: 0,
+              oldPath: d.originalUri ? vscode.workspace.asRelativePath(d.originalUri) : undefined,
+            }));
+
+            // Build diffs map
+            const diffs = new Map<string, string>();
+            for (const file of fileChanges) {
+              try {
+                const diffContent = await repo.diffWith(baseBranch, file.path);
+                diffs.set(file.path, diffContent || '');
+              } catch {
+                // File might not exist in base branch
+              }
+            }
+
+            progress.report({ message: 'Generating context...' });
+
+            // Generate PR context
+            const prContext = await prContextGenerator.generatePrContext(
+              commits,
+              fileChanges,
+              diffs
+            );
+
+            // Create a new document with the PR context
+            const doc = await vscode.workspace.openTextDocument({
+              language: 'markdown',
+              content: `# ${prContext.title}\n\n${prContext.description}`,
+            });
+
+            await vscode.window.showTextDocument(doc);
+
+            // Show summary
+            vscode.window.showInformationMessage(
+              `PR Context generated: ${prContext.suggestedReviewers.length} reviewers suggested, ${prContext.relatedAdrs.length} ADRs found, ${prContext.breakingChanges.length} breaking changes detected`
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(`Failed to generate PR context: ${error}`);
+          }
+        }
+      );
+    }),
+
+    vscode.commands.registerCommand('egce.suggestReviewers', async () => {
+      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      if (!gitExtension) {
+        vscode.window.showErrorMessage('Git extension not found');
+        return;
+      }
+
+      const git = gitExtension.exports.getAPI(1);
+      const repo = git.repositories[0];
+
+      if (!repo) {
+        vscode.window.showErrorMessage('No Git repository found');
+        return;
+      }
+
+      const baseBranch = await vscode.window.showInputBox({
+        prompt: 'Enter base branch',
+        value: 'main',
+      });
+
+      if (!baseBranch) return;
+
+      const currentBranch = repo.state.HEAD?.name || 'HEAD';
+      const diffResult = await repo.diffBetween(baseBranch, currentBranch);
+
+      const fileChanges = diffResult.map((d: { uri: vscode.Uri; status: number }) => ({
+        path: vscode.workspace.asRelativePath(d.uri),
+        status: d.status === 1 ? 'added' : d.status === 2 ? 'modified' : d.status === 3 ? 'deleted' : 'modified',
+        additions: 0,
+        deletions: 0,
+      }));
+
+      const modules = [...new Set(fileChanges.map((f: { path: string }) => f.path.split('/')[0]))];
+      const reviewers = await prContextGenerator.suggestReviewers(fileChanges, modules);
+
+      if (reviewers.length === 0) {
+        vscode.window.showInformationMessage('No reviewer suggestions found');
+        return;
+      }
+
+      const items = reviewers.map((r) => ({
+        label: r.username,
+        description: `Relevance: ${r.relevanceScore}`,
+        detail: `${r.reason} | Modules: ${r.modules.join(', ')}`,
+      }));
+
+      await vscode.window.showQuickPick(items, {
+        placeHolder: 'Suggested reviewers (sorted by relevance)',
+      });
+    }),
+
+    vscode.commands.registerCommand('egce.detectBreakingChanges', async () => {
+      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      if (!gitExtension) {
+        vscode.window.showErrorMessage('Git extension not found');
+        return;
+      }
+
+      const git = gitExtension.exports.getAPI(1);
+      const repo = git.repositories[0];
+
+      if (!repo) {
+        vscode.window.showErrorMessage('No Git repository found');
+        return;
+      }
+
+      const baseBranch = await vscode.window.showInputBox({
+        prompt: 'Enter base branch',
+        value: 'main',
+      });
+
+      if (!baseBranch) return;
+
+      const currentBranch = repo.state.HEAD?.name || 'HEAD';
+      const diffResult = await repo.diffBetween(baseBranch, currentBranch);
+
+      const fileChanges = diffResult.map((d: { uri: vscode.Uri; status: number }) => ({
+        path: vscode.workspace.asRelativePath(d.uri),
+        status: d.status === 1 ? 'added' : d.status === 2 ? 'modified' : d.status === 3 ? 'deleted' : 'modified',
+        additions: 0,
+        deletions: 0,
+      }));
+
+      // Build diffs map
+      const diffs = new Map<string, string>();
+      for (const file of fileChanges) {
+        try {
+          const diffContent = await repo.diffWith(baseBranch, file.path);
+          diffs.set(file.path, diffContent || '');
+        } catch {
+          // File might not exist in base branch
+        }
+      }
+
+      const breakingChanges = await prContextGenerator.detectBreakingChanges(fileChanges, diffs);
+
+      if (breakingChanges.length === 0) {
+        vscode.window.showInformationMessage('No breaking changes detected');
+        return;
+      }
+
+      const items = breakingChanges.map((bc) => ({
+        label: `${bc.severity.toUpperCase()}: ${bc.type}`,
+        description: bc.location.file,
+        detail: bc.description,
+      }));
+
+      await vscode.window.showQuickPick(items, {
+        placeHolder: `${breakingChanges.length} breaking change(s) detected`,
+      });
+    }),
+
+    vscode.commands.registerCommand('egce.findRelatedAdrs', async () => {
+      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      if (!gitExtension) {
+        vscode.window.showErrorMessage('Git extension not found');
+        return;
+      }
+
+      const git = gitExtension.exports.getAPI(1);
+      const repo = git.repositories[0];
+
+      if (!repo) {
+        vscode.window.showErrorMessage('No Git repository found');
+        return;
+      }
+
+      const baseBranch = await vscode.window.showInputBox({
+        prompt: 'Enter base branch',
+        value: 'main',
+      });
+
+      if (!baseBranch) return;
+
+      const currentBranch = repo.state.HEAD?.name || 'HEAD';
+      const diffResult = await repo.diffBetween(baseBranch, currentBranch);
+
+      const fileChanges = diffResult.map((d: { uri: vscode.Uri; status: number }) => ({
+        path: vscode.workspace.asRelativePath(d.uri),
+        status: d.status === 1 ? 'added' : d.status === 2 ? 'modified' : d.status === 3 ? 'deleted' : 'modified',
+        additions: 0,
+        deletions: 0,
+      }));
+
+      const modules = [...new Set(fileChanges.map((f: { path: string }) => f.path.split('/')[0]))];
+      const relatedAdrs = await prContextGenerator.findRelatedAdrs(fileChanges, modules);
+
+      if (relatedAdrs.length === 0) {
+        vscode.window.showInformationMessage('No related ADRs found');
+        return;
+      }
+
+      const items = relatedAdrs.map((adr) => ({
+        label: `[${adr.id}] ${adr.title}`,
+        description: `${adr.status} - ${adr.relevance} relevance`,
+        detail: adr.reason,
+        adr,
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: `${relatedAdrs.length} related ADR(s) found`,
+      });
+
+      if (selected) {
+        // Open the ADR file
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (workspaceFolder) {
+          const adrUri = vscode.Uri.joinPath(workspaceFolder.uri, selected.adr.filePath);
+          const document = await vscode.workspace.openTextDocument(adrUri);
+          await vscode.window.showTextDocument(document);
+        }
+      }
+    })
+  );
+
+  console.log('US-015: PR Context Generator registered');
 
   // Register all commands (including collaboration commands from US-012)
   registerCommands(
