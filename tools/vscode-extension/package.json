@@ -7,6 +7,9 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "extensionDependencies": [
+    "vscode.git"
+  ],
   "categories": [
     "Other",
     "Visualization"
@@ -260,6 +263,30 @@
         "title": "Get Pattern Recommendations",
         "category": "EGCE",
         "icon": "$(lightbulb)"
+      },
+      {
+        "command": "egce.generatePrContext",
+        "title": "Generate PR Context",
+        "category": "EGCE",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "egce.suggestReviewers",
+        "title": "Suggest PR Reviewers",
+        "category": "EGCE",
+        "icon": "$(person-add)"
+      },
+      {
+        "command": "egce.detectBreakingChanges",
+        "title": "Detect Breaking Changes",
+        "category": "EGCE",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "egce.findRelatedAdrs",
+        "title": "Find Related ADRs for Changes",
+        "category": "EGCE",
+        "icon": "$(references)"
       }
     ],
     "viewsContainers": {
@@ -425,6 +452,18 @@
         },
         {
           "command": "egce.getPatternRecommendations"
+        },
+        {
+          "command": "egce.generatePrContext"
+        },
+        {
+          "command": "egce.suggestReviewers"
+        },
+        {
+          "command": "egce.detectBreakingChanges"
+        },
+        {
+          "command": "egce.findRelatedAdrs"
         }
       ]
     },
@@ -546,6 +585,70 @@
               "type": "array",
               "items": { "type": "string" },
               "description": "Negative consequences of the decision"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_pr_context",
+        "displayName": "EGCE PR Context Generator",
+        "description": "Generates rich context for Pull Requests including semantic diff analysis, related ADRs, pattern identification, reviewer suggestions, and breaking change detection (US-015)",
+        "canBeReferencedInPrompt": true,
+        "tags": ["pr", "pull-request", "context", "review"],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseBranch": {
+              "type": "string",
+              "description": "Base branch for comparison (default: main)"
+            },
+            "includePatterns": {
+              "type": "boolean",
+              "description": "Detect and include patterns used or modified (default: true)"
+            },
+            "suggestReviewers": {
+              "type": "boolean",
+              "description": "Suggest reviewers based on module ownership (default: true)"
+            },
+            "detectBreakingChanges": {
+              "type": "boolean",
+              "description": "Detect potential breaking changes (default: true)"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_suggest_reviewers",
+        "displayName": "EGCE Suggest Reviewers",
+        "description": "Suggests PR reviewers based on module ownership and CODEOWNERS (AC-015.4)",
+        "canBeReferencedInPrompt": true,
+        "tags": ["pr", "review", "team"],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseBranch": {
+              "type": "string",
+              "description": "Base branch for comparison (default: main)"
+            },
+            "maxReviewers": {
+              "type": "number",
+              "description": "Maximum number of reviewers to suggest (default: 5)"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_detect_breaking_changes",
+        "displayName": "EGCE Detect Breaking Changes",
+        "description": "Detects potential breaking changes in code modifications including API, schema, contract, and behavior changes (AC-015.5)",
+        "canBeReferencedInPrompt": true,
+        "tags": ["pr", "breaking-changes", "api", "compatibility"],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "baseBranch": {
+              "type": "string",
+              "description": "Base branch for comparison (default: main)"
             }
           }
         }
@@ -777,6 +880,48 @@
           "minimum": 0.5,
           "maximum": 1.0,
           "description": "Confidence threshold for automatic ADR suggestion (0.5-1.0)"
+        },
+        "egce.prContext.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable PR Context Generation features (US-015)"
+        },
+        "egce.prContext.defaultBaseBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Default base branch for PR comparison"
+        },
+        "egce.prContext.detectPatterns": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect and list patterns in PR changes (AC-015.3)"
+        },
+        "egce.prContext.suggestReviewers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically suggest reviewers based on module ownership (AC-015.4)"
+        },
+        "egce.prContext.detectBreakingChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect potential breaking changes (AC-015.5)"
+        },
+        "egce.prContext.maxReviewers": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of reviewers to suggest"
+        },
+        "egce.prContext.includeTestChecklist": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include testing checklist in generated PR description"
+        },
+        "egce.prContext.includeDeploymentNotes": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include deployment notes when breaking changes are detected"
         }
       }
     }
