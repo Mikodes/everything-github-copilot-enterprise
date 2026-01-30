@@ -230,6 +230,36 @@
         "title": "Toggle Collaboration",
         "category": "EGCE",
         "icon": "$(broadcast)"
+      },
+      {
+        "command": "egce.validateCode",
+        "title": "Validate Code Against Patterns",
+        "category": "EGCE",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "egce.generateAdr",
+        "title": "Generate Architecture Decision Record",
+        "category": "EGCE",
+        "icon": "$(note)"
+      },
+      {
+        "command": "egce.detectAdrRequirement",
+        "title": "Detect ADR Requirement",
+        "category": "EGCE",
+        "icon": "$(search)"
+      },
+      {
+        "command": "egce.showTemplates",
+        "title": "Show Code Templates",
+        "category": "EGCE",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "egce.getPatternRecommendations",
+        "title": "Get Pattern Recommendations",
+        "category": "EGCE",
+        "icon": "$(lightbulb)"
       }
     ],
     "viewsContainers": {
@@ -380,9 +410,147 @@
         },
         {
           "command": "egce.toggleCollaboration"
+        },
+        {
+          "command": "egce.validateCode"
+        },
+        {
+          "command": "egce.generateAdr"
+        },
+        {
+          "command": "egce.detectAdrRequirement"
+        },
+        {
+          "command": "egce.showTemplates"
+        },
+        {
+          "command": "egce.getPatternRecommendations"
         }
       ]
     },
+    "languageModelTools": [
+      {
+        "name": "egce_project_context",
+        "displayName": "EGCE Project Context",
+        "description": "Provides complete project context from Memory Bank including patterns, standards, ADRs, and templates for Copilot Agent Mode",
+        "canBeReferencedInPrompt": true,
+        "tags": ["memory-bank", "context", "architecture"],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "includePatterns": {
+              "type": "boolean",
+              "description": "Include architecture patterns in context"
+            },
+            "includeTemplates": {
+              "type": "boolean",
+              "description": "Include code templates in context"
+            },
+            "includeStandards": {
+              "type": "boolean",
+              "description": "Include team standards in context"
+            },
+            "currentFile": {
+              "type": "string",
+              "description": "Current file path for contextual loading"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_validate_code",
+        "displayName": "EGCE Validate Code",
+        "description": "Validates code against team standards and architecture patterns from Memory Bank",
+        "canBeReferencedInPrompt": true,
+        "tags": ["validation", "patterns", "standards"],
+        "inputSchema": {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Code to validate"
+            },
+            "language": {
+              "type": "string",
+              "description": "Programming language of the code"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_get_template",
+        "displayName": "EGCE Get Template",
+        "description": "Retrieves code templates from Memory Bank for code generation",
+        "canBeReferencedInPrompt": true,
+        "tags": ["templates", "generation", "code"],
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "templateId": {
+              "type": "string",
+              "description": "Specific template ID to retrieve"
+            },
+            "category": {
+              "type": "string",
+              "description": "Template category filter"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_search_patterns",
+        "displayName": "EGCE Search Patterns",
+        "description": "Searches architecture patterns in Memory Bank",
+        "canBeReferencedInPrompt": true,
+        "tags": ["patterns", "search", "architecture"],
+        "inputSchema": {
+          "type": "object",
+          "required": ["query"],
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query for patterns"
+            }
+          }
+        }
+      },
+      {
+        "name": "egce_generate_adr",
+        "displayName": "EGCE Generate ADR",
+        "description": "Generates Architecture Decision Record drafts for architectural changes",
+        "canBeReferencedInPrompt": true,
+        "tags": ["adr", "architecture", "decisions"],
+        "inputSchema": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "ADR title"
+            },
+            "context": {
+              "type": "string",
+              "description": "Context/problem statement"
+            },
+            "decision": {
+              "type": "string",
+              "description": "Decision made"
+            },
+            "positiveConsequences": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Positive consequences of the decision"
+            },
+            "negativeConsequences": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Negative consequences of the decision"
+            }
+          }
+        }
+      }
+    ],
     "configuration": {
       "title": "EGCE Memory Bank",
       "properties": {
@@ -566,6 +734,49 @@
           "items": {
             "type": "string"
           }
+        },
+        "egce.agentMode.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Copilot Agent Mode integration"
+        },
+        "egce.agentMode.autoProvideContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically provide project context to Agent Mode"
+        },
+        "egce.agentMode.validateBeforeApply": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate code changes against patterns before applying"
+        },
+        "egce.agentMode.autoDetectAdr": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect when ADR is required for changes"
+        },
+        "egce.agentMode.includePatterns": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include architecture patterns in Agent Mode context"
+        },
+        "egce.agentMode.includeTemplates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include code templates in Agent Mode context"
+        },
+        "egce.agentMode.validationStrictness": {
+          "type": "string",
+          "enum": ["relaxed", "moderate", "strict"],
+          "default": "moderate",
+          "description": "Strictness level for code validation"
+        },
+        "egce.agentMode.adrAutoGenerateThreshold": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0.5,
+          "maximum": 1.0,
+          "description": "Confidence threshold for automatic ADR suggestion (0.5-1.0)"
         }
       }
     }
